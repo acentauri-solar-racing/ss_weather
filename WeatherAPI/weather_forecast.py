@@ -1,7 +1,16 @@
 import requests
-import pandas as pd
 
 class WeatherForecast():
+    """
+    Class for interacting with the weather forecast API from Meteotest.
+
+    Attributes:
+        api_website (str): The base API URL.
+        key (str): The API key for authentication.
+        service (str): The service to be used.
+        format (str): The response format (default: 'json').
+    """
+        
     api_website: str = 'https://mdx.meteotest.ch/api_v1?'
     key: str = '54F773F38E50F4CF562384A44B9948D3'
     service: str = 'solarforecast'
@@ -12,17 +21,6 @@ class WeatherForecast():
         # site name in ascending order
         # then introduce online position and look some km ahead in the direction of the road (needed roate lat and long)
         pass
-
-    # TODO UTC timezone check
-
-    def create_request_url(self, **kwargs):
-        # to remove this function
-        url = f'{self.api_website}key={self.key}&service={self.service}&format={self.format}'
-
-        for key, value in kwargs.items():
-            url += f'&{key}={value}'
-
-        return url
     
     def check_variables(self, **kwargs):
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
@@ -35,51 +33,92 @@ class WeatherForecast():
             'altitude': (int, None, None)
         }
 
-        for key, value in kwargs.items():
-            if key in validation_rules:
-                value_type, min_value, max_value = validation_rules[key]
+        for variable, value in kwargs.items():
+            if variable in validation_rules:
+                value_type, min_value, max_value = validation_rules[variable]
 
                 if not isinstance(value, value_type):
-                    raise ValueError(f'{key} has to be a {value_type}. Received: {value}')
+                    raise ValueError(f'{variable} has to be a {value_type}. Received: {value}')
 
                 if min_value is not None and max_value is not None:
                     if not (min_value <= value <= max_value):
-                        raise ValueError(f'{key} has to be between {min_value} and {max_value}. Received: {value}')
-
-    def get_site_add(self, name, latitude, longitude, azimuth=0, inclination=0, **kwargs):
-        # initially only one by one, then with a vector of positions received as input
-        
-
-        action: str = 'siteadd'
-
-        url = f'{self.api_website}key={self.key}&service={self.service}&action={action}&format={self.format}'
-        
-
-        "https://mdx.meteotest.ch/api_v1?key=54F773F38E50F4CF562384A44B9948D3&service=solarforecast&action=siteadd&format=json&name=testDarwin&latitude=-12.39828502488282&longitude=130.88590799669225&inclination=0"
+                        raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
+            else:
+                raise ValueError(f'Wrong variable. Received: {variable}')
+                    
+    def send_get_request(self, variables):
+        mdx_url = f'{self.api_website}key={self.key}&service={self.service}'
+        for key, value in variables.items():
+            mdx_url += f'&{key}={value}'
 
         payload = {}
         headers = {}
+        response = requests.request("GET", mdx_url, headers=headers, data=payload)
+        return response.text
 
-        response = requests.request("GET", url, headers=headers, data=payload)
+    def get_site_add(self, name, latitude, longitude, azimuth=0, inclination=0):
+        # initially only one by one, then with a vector of positions received as input
 
-        print(response.text)
-        requests.get(mdx_url)
+        variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
+            'action': 'siteadd',
+            'format': self.format,
+            'name': name,
+            'latitude': latitude,
+            'longitude': longitude,
+            'azimuth': azimuth,
+            'inclination': inclination
+        }
 
-    def get_site_delete(self, ):
-        action: str = 'sitedelete'
-        pass
+        response_text = self.send_get_request(variables)
+        print(response_text)
 
-    def get_site_info(self, ):
-        action: str = 'siteinfo'
-        pass
+    def get_site_edit(self, site_id, **kwargs):
+        # initially only one by one, then with a vector of positions received as input
 
-    def get_site_edit(self, ):
-        action: str = 'siteedit'
-        pass
+        variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
+            'action': 'siteedit',
+            'site_id': site_id
+        }
 
-    def get_solar_forecast(self, ):
-        action: str = 'getforecast'
-        pass
+        #TODO
 
-    def get_solar_forecast_cloud_move(self, ):
-        pass
+        response_text = self.send_get_request(variables)
+        print(response_text)
+
+    def get_site_delete(self, site_id):
+        # initially only one by one, then with a vector of positions received as input
+
+        variables = {
+            'action': 'sitedelete',
+            'site_id': site_id
+        }
+
+        response_text = self.send_get_request(variables)
+        print(response_text)
+
+    def get_site_info(self):
+        variables = {
+            'action': 'siteinfo',
+            'format': self.format
+        }
+
+        response_text = self.send_get_request(variables)
+        print(response_text)
+
+    def get_solar_forecast(self):
+        variables = {
+            'action': 'getforecast',
+            'format': self.format
+        }
+
+        response_text = self.send_get_request(variables)
+        print(response_text)
+
+    def get_solar_forecast_cloud_move(self):
+        variables = {
+            'action': 'getforecast_cloudmove',
+            'format': self.format
+        }
+
+        response_text = self.send_get_request(variables)
+        print(response_text)
