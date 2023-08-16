@@ -22,10 +22,12 @@ class WeatherForecast():
         # then introduce online position and look some km ahead in the direction of the road (needed roate lat and long)
         pass
     
-    def check_variables(self, **kwargs):
+    def check_variables(self, variables):
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
             'site_id': (int, None, None),
             'name': (str, None, None),
+            'action': (str, None, None),
+            'format': (str, None, None),
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
             'azimuth': (int, 0, 360),
@@ -33,7 +35,7 @@ class WeatherForecast():
             'altitude': (int, None, None)
         }
 
-        for variable, value in kwargs.items():
+        for variable, value in variables.items():
             if variable in validation_rules:
                 value_type, min_value, max_value = validation_rules[variable]
 
@@ -47,6 +49,8 @@ class WeatherForecast():
                 raise ValueError(f'Wrong variable. Received: {variable}')
                     
     def send_get_request(self, variables):
+        self.check_variables(variables)
+
         mdx_url = f'{self.api_website}key={self.key}&service={self.service}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
