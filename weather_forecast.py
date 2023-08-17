@@ -84,7 +84,8 @@ class WeatherForecast():
             'site_id': site_id
         }
 
-        #TODO
+        # TODO lat e lon insieme per forza
+        # e chiama check_variables
 
         response_text = self.send_get_request(variables)
         print(response_text)
@@ -108,6 +109,10 @@ class WeatherForecast():
 
         response_text = self.send_get_request(variables)
         print(response_text)
+
+    def get_site_id(self, name):
+        #TODO get site id from name of a site
+        pass
 
     def get_solar_forecast(self):
         variables = {
