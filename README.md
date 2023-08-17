@@ -6,15 +6,27 @@ List output variables
 
 ## Strategy Database Transactions
 
+### Installation
+
+Install an SQL database. If you aren't sure which way to do this, I can recommend using XAMPP on all Platforms.
+
+Then prepare your python installation by installing the pip packages saved in `requirements.txt`:
+
+```py
+pip install -r requirements.txt
+```
+
 ### Creating a Database
 
-To interact with the database, we use a library called SQLAlchemy. Create a new database for the strategy team in XAMPP or whatever you are using. Here is an example for how to create a new user and a database with the same name.
+Create a new database for the strategy team in XAMPP or whatever you are using. Here is an example for how to create a new user and a database with the same name.
 
 !['Example Config'](docs/dbconfig.png)
 
 Make sure to copy file `db/env.example` and rename the file to `db/.env` so that your password is not in version control. Then exchange the dummy values in `db/.env` to the values you previously chose
 
 ### Adding entries
+
+The database interactions are abstracted behind the DBService class.
 
 You can create new entries to the database by executing the following code:
 
@@ -68,6 +80,6 @@ db.clear_table(Forecast)
 
 ### Chaging ORM models
 
-The ORM models are saved in `/db/models.py`. Here is find the nitty-gritty details on the specification: [https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models)
+To interact with the database, we use a library called SQLAlchemy and their object relational models. The models are saved in `/db/models.py`. There you specify what your table looks like (columns, data type). Here is find the nitty-gritty details on the specification: [https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models)
 
-For most use-cases you can just directly copy-paste a line and then change the name and type of an entry. There isn't much more to it.
+For most use-cases you can just directly copy-paste a line and then change the name and type of an entry. There isn't much more to it. Or if you want another table, just copy paste a class and rename the variables
