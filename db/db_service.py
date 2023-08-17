@@ -54,13 +54,14 @@ class DbService:
     def query(self, orm_model, num_entries: int) -> DataFrame:
         with self.engine.connect() as conn:
             return pd.read_sql_query(
-                sql=self.session.query(orm_model)
-                .order_by(orm_model.timestamp.desc())
-                .limit(num_entries)
-                .statement,
+                sql=self.session.query(orm_model).limit(num_entries).statement,
                 con=conn,
             )
 
     def latest(self, orm_model) -> DataFrame:
         with self.engine.connect() as conn:
             return self.session.query(orm_model).order_by(orm_model.id.desc()).first()
+
+    def clear_table(self, orm_model) -> None:
+        self.session.query(orm_model).delete()
+        self.session.commit()

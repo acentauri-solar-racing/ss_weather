@@ -33,3 +33,41 @@ forecast: Forecast = Forecast(
 db: DbService = DbService()
 db.add_entry(forecast)
 ```
+
+### Reading entries
+
+The DBService class provides two methods for fetching data in python. `
+
+```py
+from db.db_service import DbService
+from db.models import *
+
+db: DbService = DbService()
+
+# get latest 100 entries
+db.query(Forecast, 100)
+
+# get latest forecast
+db.latest(Forecast)
+```
+
+### Clearing a table
+
+This code snippet allows you to clear all the values inside of a table without deleting the table itself.
+
+```py
+from db.db_service import DbService
+from db.models import *
+
+db: DbService = DbService()
+
+# clear all forecasts
+db.clear_table(Forecast)
+```
+
+
+### Chaging ORM models
+
+The ORM models are saved in `/db/models.py`. Here is find the nitty-gritty details on the specification: [https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models)
+
+For most use-cases you can just directly copy-paste a line and then change the name and type of an entry. There isn't much more to it.
