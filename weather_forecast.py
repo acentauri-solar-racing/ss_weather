@@ -1,4 +1,5 @@
 import requests
+import pandas as pd
 
 class WeatherForecast():
     """
@@ -22,7 +23,7 @@ class WeatherForecast():
         # then introduce online position and look some km ahead in the direction of the road (needed roate lat and long)
         pass
     
-    def check_variables(self, variables):
+    def check_variables(self, variables) -> None:
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
             'site_id': (int, None, None),
             'name': (str, None, None),
@@ -58,9 +59,9 @@ class WeatherForecast():
         payload = {}
         headers = {}
         response = requests.request("GET", mdx_url, headers=headers, data=payload)
-        return response.text
+        return response
 
-    def get_site_add(self, name, latitude, longitude, azimuth=0, inclination=0):
+    def get_site_add(self, name, latitude, longitude, azimuth=0, inclination=0) -> None:
         # initially only one by one, then with a vector of positions received as input
 
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
@@ -73,10 +74,10 @@ class WeatherForecast():
             'inclination': inclination
         }
 
-        response_text = self.send_get_request(variables)
-        print(response_text)
+        response = self.send_get_request(variables)
+        print(response.text)
 
-    def get_site_edit(self, site_id, **kwargs):
+    def get_site_edit(self, site_id, **kwargs) -> None:
         # initially only one by one, then with a vector of positions received as input
 
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
@@ -87,10 +88,10 @@ class WeatherForecast():
         # TODO lat e lon insieme per forza
         # e chiama check_variables
 
-        response_text = self.send_get_request(variables)
-        print(response_text)
+        response = self.send_get_request(variables)
+        print(response.text)
 
-    def get_site_delete(self, site_id):
+    def get_site_delete(self, site_id) -> None:
         # initially only one by one, then with a vector of positions received as input
 
         variables = {
@@ -98,36 +99,45 @@ class WeatherForecast():
             'site_id': site_id
         }
 
-        response_text = self.send_get_request(variables)
-        print(response_text)
+        response = self.send_get_request(variables)
+        print(response.text)
 
-    def get_site_info(self):
+    def get_site_info(self) -> None:
         variables = {
             'action': 'siteinfo',
             'format': self.format
         }
 
-        response_text = self.send_get_request(variables)
-        print(response_text)
+        response = self.send_get_request(variables)
+        print(response.text)
 
     def get_site_id(self, name):
         #TODO get site id from name of a site
+        # improve that a full response is given and name (from 1 to 100) is attributed with site id
         pass
 
-    def get_solar_forecast(self):
+    def get_solar_forecast(self) -> None:
         variables = {
             'action': 'getforecast',
             'format': self.format
         }
 
-        response_text = self.send_get_request(variables)
-        print(response_text)
+        response = self.send_get_request(variables)
+        print(response.text)
 
-    def get_solar_forecast_cloud_move(self):
-        variables = {
-            'action': 'getforecast_cloudmove',
-            'format': self.format
-        }
+        # Extract values from the JSON data
+        values_list = []
+        for item in response:
+            value1 = item.get("gk")
+            value2 = item.get("tcc")
+            values_list.append((value1, value2))
 
-        response_text = self.send_get_request(variables)
-        print(response_text)
+        # Create a DataFrame from the extracted values
+        df = pd.DataFrame(values_list, columns=["Column1", "Column2"])
+
+        # Display the DataFrame
+        print(df)
+
+    def save_raw_data():
+        # save data in 2D matrix space time in pandas
+        pass
