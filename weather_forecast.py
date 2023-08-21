@@ -60,6 +60,7 @@ class WeatherForecast():
         headers = {}
         response = requests.request("GET", mdx_url, headers=headers, data=payload)
         return response
+    
 
     def get_site_add(self, name, latitude, longitude, azimuth=0, inclination=0) -> None:
         # initially only one by one, then with a vector of positions received as input
