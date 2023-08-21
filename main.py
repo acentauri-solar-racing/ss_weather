@@ -7,7 +7,7 @@ from weather_forecast import WeatherForecast
 actual_position = {'longitude': 130,
                    'latitude': -12}
 
-delta_spacing = 100 # in meters
+delta_spacing = 10000 # in meters
 
 route = Route()
 
