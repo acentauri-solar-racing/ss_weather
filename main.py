@@ -4,12 +4,10 @@ import numpy as np
 from route import Route
 from weather_forecast import WeatherForecast
 
-actual_position = {'longitude': 130,
-                   'latitude': -12}
-
-delta_spacing = 10000 # in meters
+current_position = {'longitude': 130.868566,
+                    'latitude': -12.432466}
+delta_spacing = 100000 # in meters
 
 route = Route()
-
-route.find_closest_point(actual_position)
-# route.dist2lati_long(actual_position, delta_spacing)
+route.get_final_data(current_position)
+route.get_final_data(current_position, delta_spacing)

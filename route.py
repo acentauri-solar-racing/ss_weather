@@ -19,7 +19,28 @@ class Route():
         route_data = pd.read_csv(csv_file_path)
         return route_data
     
-    def find_closest_point(self, position):
+    def check_variables(self, variables) -> None:
+        validation_rules = {
+            'latitude': (float, -90.0, 90.0),
+            'longitude': (float, -180.0, 180.0)
+        }
+
+        for variable, value in variables.items():
+            if variable in validation_rules:
+                value_type, min_value, max_value = validation_rules[variable]
+
+                if not isinstance(value, value_type):
+                    raise ValueError(f'{variable} has to be a {value_type}. Received: {value}')
+
+                if min_value is not None and max_value is not None:
+                    if not (min_value <= value <= max_value):
+                        raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
+            else:
+                raise ValueError(f'Wrong variable. Received: {variable}')
+    
+    def find_closest_point(self, position: dict):
+        self.check_variables(position)
+
         actual_coords = (position['latitude'], position['longitude'])
 
         # Query the k-d tree to find the nearest point index
@@ -28,10 +49,11 @@ class Route():
         return closest_point
 
     def get_final_data(self, current_position: dict, delta_spacing: float = None):
+        self.check_variables(current_position)
+
         closest_point = self.find_closest_point(position=current_position)
-        print(closest_point)
+
         start_index = closest_point.name
-        print(type(closest_point.name))
         start_distance = self.route_data.iloc[start_index]['CumDistance']
 
         # Cut data and start the cumulative distance from the new position
@@ -43,8 +65,8 @@ class Route():
         cut_data = cut_data.drop('Surface', axis=1)
 
         if delta_spacing is None:
-            # print(cut_data)
             return cut_data
+        
         else:
             if not isinstance(delta_spacing, int) or (self.min_delta_spacing > delta_spacing > self.max_delta_spacing):
                 raise ValueError(f'{delta_spacing} has to be an integer between {self.min_delta_spacing} and {self.max_delta_spacing}. Received: {delta_spacing}')
@@ -74,13 +96,5 @@ class Route():
                     fp = cut_data[column]
                     interpolated_values = np.interp(x, xp, fp)
                     interpolated_data[column] = interpolated_values.tolist()
-            # print(interpolated_data)
-            return interpolated_data
-        
-route = Route()
-current_position = {'longitude': 130.868566,
-                    'latitude': -12.432466}
 
-delta_spacing = 100000 # in meters
-route.get_final_data(current_position)
-route.get_final_data(current_position, delta_spacing)
+            return interpolated_data
