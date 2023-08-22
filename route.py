@@ -16,7 +16,7 @@ class Route():
         route_data = pd.read_csv(csv_file_path)
         return route_data
     
-    def check_variables(self, variables) -> None:
+    def check_variables(self, variables:dict) -> None:
         validation_rules = {
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
@@ -38,7 +38,7 @@ class Route():
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
     
-    def find_closest_point(self, position: dict):
+    def find_closest_point(self, position:dict):
         self.check_variables(position)
 
         actual_coords = (position['latitude'], position['longitude'])
@@ -48,7 +48,7 @@ class Route():
         closest_point = self.route_data.iloc[nearest_point_index]
         return closest_point
 
-    def get_final_data(self, current_position: dict, number_sites: int = None, delta_spacing: float = None):
+    def get_final_data(self, current_position:dict, number_sites:int=None, delta_spacing:float=None) -> pd.DataFrame:
         self.check_variables(current_position)
 
         closest_point = self.find_closest_point(position=current_position)
