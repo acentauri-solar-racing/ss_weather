@@ -1,4 +1,5 @@
 import requests
+import json
 import pandas as pd
 
 class WeatherForecast():
@@ -61,6 +62,10 @@ class WeatherForecast():
         response = requests.request("GET", mdx_url, headers=headers, data=payload)
         return response
     
+    def print_response(self, response_to_print) -> None:
+        data_json = json.loads(response_to_print.text)
+        formatted_json = json.dumps(data_json, indent=2)
+        print(formatted_json)
 
     def get_site_add(self, name, latitude, longitude, azimuth=0, inclination=0) -> None:
         # initially only one by one, then with a vector of positions received as input
@@ -76,7 +81,6 @@ class WeatherForecast():
         }
 
         response = self.send_get_request(variables)
-        print(response.text)
 
     def get_site_edit(self, site_id, **kwargs) -> None:
         # initially only one by one, then with a vector of positions received as input
@@ -90,7 +94,6 @@ class WeatherForecast():
         # e chiama check_variables
 
         response = self.send_get_request(variables)
-        print(response.text)
 
     def get_site_delete(self, site_id) -> None:
         # initially only one by one, then with a vector of positions received as input
@@ -101,21 +104,32 @@ class WeatherForecast():
         }
 
         response = self.send_get_request(variables)
-        print(response.text)
 
-    def get_site_info(self) -> None:
+    def get_site_info(self, print_is_requested: bool = True):
         variables = {
             'action': 'siteinfo',
             'format': self.format
         }
 
         response = self.send_get_request(variables)
-        print(response.text)
 
-    def get_site_id(self, name):
-        #TODO get site id from name of a site
-        # improve that a full response is given and name (from 1 to 100) is attributed with site id
-        pass
+        if print_is_requested:
+            self.print_response(response)
+
+        return response
+
+    def get_site_id(self, name: str) -> int:
+        response = self.get_site_info(print_is_requested=False)
+
+        data_json = json.loads(response.text)
+        sites = data_json["payload"]["solarforecast"]["sites"]
+
+        for site_id, site_info in sites.items():
+            if site_info["name"] == name:
+                return int(site_id)
+
+        raise ValueError(f"No site found with name: {name}")
+
 
     def get_solar_forecast(self) -> None:
         variables = {
@@ -124,21 +138,20 @@ class WeatherForecast():
         }
 
         response = self.send_get_request(variables)
-        print(response.text)
 
-        # Extract values from the JSON data
-        values_list = []
-        for item in response:
-            value1 = item.get("gk")
-            value2 = item.get("tcc")
-            values_list.append((value1, value2))
+    def get_solar_forecast_cloudmove(self) -> None:
+        variables = {
+            'action': 'getforecast_cloudmove',
+            'format': self.format
+        }
 
-        # Create a DataFrame from the extracted values
-        df = pd.DataFrame(values_list, columns=["Column1", "Column2"])
+        response = self.send_get_request(variables)
 
-        # Display the DataFrame
-        print(df)
-
-    def save_raw_data():
-        # save data in 2D matrix space time in pandas
+    def save_raw_data() -> None:
+        # save data in 3D matrix space-time+variable in pandas
         pass
+
+api = WeatherForecast()
+
+id = api.get_site_id(name="Darwin")
+print(id)
