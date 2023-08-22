@@ -1,6 +1,7 @@
 import requests
 import json
 import pandas as pd
+from bs4 import BeautifulSoup
 
 class WeatherForecast():
     """
@@ -48,27 +49,37 @@ class WeatherForecast():
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
             
-    def check_response(self, response:dict) -> None:
-        status = response["status"]
+    def check_response(self, response:requests.models.Response) -> None:
+        content_type = response.headers.get('Content-Type')
 
-        if status == "OK":
-            print(f'Response status: {status}')
-        else:
-            print(f'Response status: {status}')
-            # raise ValueError(f'Response status: {status}')
+        if 'application/json' in content_type:
+            response_dict = json.loads(response.text) # equivalent to = response.json()
+            print(f'Response status: {response_dict["status"]}')
+
+        elif 'text/html' in content_type:
+            html_content = response.text
+            soup = BeautifulSoup(html_content, 'html.parser')
             
-    def send_get_request(self, variables:dict) -> dict:
+            # Find the <div> with class "alert alert-info" and get its text
+            info_div = soup.find('div', class_='alert alert-info')
+            if info_div:
+                status_text = info_div.get_text().strip()
+                print(f'Response status: {status_text}')
+
+        else:
+            print('Unknown content type')
+            
+    def send_get_request(self, variables:dict) -> requests.models.Response:
         self.check_variables(variables)
 
         mdx_url = f'{self.api_website}key={self.key}&service={self.service}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
 
-        response = requests.request("GET", mdx_url, headers={}, data={})
-        print(response.text)
-        response_dict = json.loads(response.text)
-        self.check_response(response_dict)
-        return response_dict
+        response = requests.get(mdx_url)
+
+        self.check_response(response)
+        return response
     
     def print_response(self, response:dict) -> None:
         response_formatted = json.dumps(response, indent=2)
@@ -108,8 +119,7 @@ class WeatherForecast():
 
         # TODO CHECK CHE SITE_ID ESISTE TRA QUELLI CHE CI SONO
 
-        if print_is_requested:
-            print("TODO CHE HA FUNZIONATO")
+        # if print_is_requested:
             # IMP: RESPONSE IN HTML E NON JSON
 
     def get_site_info(self, print_is_requested:bool=True):
@@ -168,6 +178,6 @@ class WeatherForecast():
 api = WeatherForecast()
 
 # id = api.find_site_id(name="Darwin")
-api.update_sites_id(print_is_requested=True)
-api.get_site_delete(584795)
-api.update_sites_id(print_is_requested=True)
+# api.update_sites_id(print_is_requested=True)
+api.get_site_delete(584798)
+# api.update_sites_id(print_is_requested=True)
