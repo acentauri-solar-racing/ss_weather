@@ -40,14 +40,23 @@ class WeatherForecast():
             if variable in validation_rules:
                 value_type, min_value, max_value = validation_rules[variable]
 
+                # Check the type
                 if not isinstance(value, value_type):
                     raise ValueError(f'{variable} has to be a {value_type}. Received: {value}')
-
+                
+                # Check the range
                 if min_value is not None and max_value is not None:
                     if not (min_value <= value <= max_value):
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
-            else:
-                raise ValueError(f'Wrong variable. Received: {variable}')
+                    
+                # Check if the site id is valid
+                if variable == 'site_id':
+                    response = self.get_site_info(print_is_requested=False)
+                    response_dict = json.loads(response.text)
+                    
+                    sites_id = response_dict["payload"]["solarforecast"]["sites"].keys()
+                    if str(value) not in set(sites_id):
+                        raise ValueError(f'Site ID {value} is not valid.')
             
     def check_response(self, response:requests.models.Response) -> None:
         content_type = response.headers.get('Content-Type')
@@ -80,12 +89,8 @@ class WeatherForecast():
 
         self.check_response(response)
         return response
-    
-    def print_response(self, response:dict) -> None:
-        response_formatted = json.dumps(response, indent=2)
-        print(response_formatted)
 
-    def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0) -> None:
+    def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
             'action': 'siteadd',
             'format': self.format,
@@ -96,7 +101,10 @@ class WeatherForecast():
             'inclination': inclination
         }
 
-        response = self.send_get_request(variables)
+        self.send_get_request(variables)
+
+        if print_is_requested:
+            print(f'Site with name {name} has been added.')
 
     def get_site_edit(self, site_id:int, **kwargs) -> None:
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
@@ -115,14 +123,12 @@ class WeatherForecast():
             'site_id': site_id
         }
 
-        response = self.send_get_request(variables)
+        self.send_get_request(variables)
 
-        # TODO CHECK CHE SITE_ID ESISTE TRA QUELLI CHE CI SONO
+        if print_is_requested:
+            print(f'Site with id {site_id} has been removed.')
 
-        # if print_is_requested:
-            # IMP: RESPONSE IN HTML E NON JSON
-
-    def get_site_info(self, print_is_requested:bool=True):
+    def get_site_info(self, print_is_requested:bool=True) -> requests.models.Response:
         variables = {
             'action': 'siteinfo',
             'format': self.format
@@ -131,28 +137,33 @@ class WeatherForecast():
         response = self.send_get_request(variables)
 
         if print_is_requested:
-            self.print_response(response)
+            print(json.dumps(response, indent=2))
 
         return response
 
     def find_site_id(self, name:str) -> int:
         response = self.get_site_info(print_is_requested=False)
+        response_dict = json.loads(response.text)
 
-        sites_data = response["payload"]["solarforecast"]["sites"]
+        sites_data = response_dict["payload"]["solarforecast"]["sites"]
         for site_id, site_info in sites_data.items():
             if site_info["name"] == name:
+                print(f"Id of site with name {name}: {site_id}")
                 return int(site_id)
+            
+        print(f"No site found with name: {name}")
 
-        raise ValueError(f"No site found with name: {name}")
-
-    def update_sites_id(self, print_is_requested:bool=True) -> None:
+    def find_name_id(self, print_is_requested:bool=True) -> None:
         response = self.get_site_info(print_is_requested=False)
+        response_dict = json.loads(response.text)
 
-        sites_data = response["payload"]["solarforecast"]["sites"]
+        sites_data = response_dict["payload"]["solarforecast"]["sites"]
+        # TODO expand this for loop
         name_id_dict = {site_data["name"]: site_data["id"] for site_data in sites_data.values()}
-        self.name_id_dict = name_id_dict
+        self.name_id_dict = name_id_dict # TODO sfruttare questo self?
 
         if print_is_requested:
+            print('The list of all name-id for sites:')
             print(name_id_dict)
 
     def get_solar_forecast(self) -> None:
@@ -178,6 +189,6 @@ class WeatherForecast():
 api = WeatherForecast()
 
 # id = api.find_site_id(name="Darwin")
-# api.update_sites_id(print_is_requested=True)
-api.get_site_delete(584798)
-# api.update_sites_id(print_is_requested=True)
+# api.find_name_id(print_is_requested=True)
+# api.get_site_add("testAdd",-12.39828502488282,130.88590799669225)
+api.find_name_id(print_is_requested=True)
