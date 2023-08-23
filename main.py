@@ -15,5 +15,5 @@ number_sites = 3
 # dataframe = route.get_final_data(current_position, number_sites=number_sites)
 
 api = WeatherForecast()
-# # api.get_sites_add(dataframe)
-# api.find_name_id()
+api.delete_all_sites()
+# api.get_site_add("new", -12.3983, 130.886)

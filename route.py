@@ -7,16 +7,16 @@ from scipy.spatial import KDTree
 class Route():
     
     def __init__(self) -> None:
-        self.route_data = self.load_route_csv()
+        self.route_data = self._load_route_csv()
         self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
 
-    def load_route_csv(self):
+    def _load_route_csv(self):
         script_directory = os.path.dirname(os.path.abspath(__file__))
         csv_file_path = os.path.join(script_directory, constants.ROUTE)
         route_data = pd.read_csv(csv_file_path)
         return route_data
     
-    def check_variables(self, variables:dict) -> None:
+    def _check_variables(self, variables:dict) -> None:
         validation_rules = {
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
@@ -39,7 +39,7 @@ class Route():
                 raise ValueError(f'Wrong variable. Received: {variable}')
     
     def find_closest_point(self, position:dict):
-        self.check_variables(position)
+        self._check_variables(position)
 
         actual_coords = (position['latitude'], position['longitude'])
 
@@ -49,7 +49,7 @@ class Route():
         return closest_point
 
     def get_final_data(self, current_position:dict, number_sites:int=None, delta_spacing:float=None) -> pd.DataFrame:
-        self.check_variables(current_position)
+        self._check_variables(current_position)
 
         closest_point = self.find_closest_point(position=current_position)
         start_index = closest_point.name
@@ -78,7 +78,7 @@ class Route():
                 'number_sites': number_sites,
                 'delta_spacing': delta_spacing
             }
-            self.check_variables(variables)
+            self._check_variables(variables)
         
             # Find value of interpolation points
             number_inter_point = int(cut_data['cumDistance'].max() / delta_spacing)
