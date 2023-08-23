@@ -68,22 +68,20 @@ class WeatherForecast():
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
                     
                 # Check site id
-                if variable == 'site_id':
-                    response = self.get_site_info(print_is_requested=False)
-                    response_dict = response.json()
+                # if variable == 'site_id':
+                    # response = self.get_site_info(print_is_requested=False)
+                    # response_dict = response.json()
                     
-                    sites_id = response_dict["payload"]["solarforecast"]["sites"].keys()
-                    if str(value) not in set(sites_id):
-                        raise ValueError(f'Site ID {value} is not valid.')
+                    # sites_id = response_dict["payload"]["solarforecast"]["sites"].keys()
+                    # if str(value) not in set(sites_id):
+                    #     raise ValueError(f'Site ID {value} is not valid.')
             
-    def _check_response(self, response:requests.models.Response) -> None:
+    def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
         content_type = response.headers.get('Content-Type')
-
-        # TODO RECEIVE THE ACTION AND PRINT ALSO FROM WHERE IT WAS CALLED
 
         if 'application/json' in content_type:
             response_dict = response.json() # equivalent to = json.loads(response.text)
-            print(f'Response status: {response_dict["status"]}')
+            print(f'Response status from {function_tag}: {response_dict["status"]}.')
 
         elif 'text/html' in content_type:
             html_content = response.text
@@ -93,10 +91,10 @@ class WeatherForecast():
             info_div = soup.find('div', class_='alert alert-info')
             if info_div:
                 status_text = info_div.get_text().strip()
-                print(f'Response status: {status_text}')
+                print(f'Response status from {function_tag}: {status_text}.')
 
         else:
-            print('Unknown content type')
+            print(f'Unknown content type from {function_tag}.')
             
     def _send_get_request(self, variables:dict) -> requests.models.Response:
         self._check_variables(variables)
@@ -107,7 +105,7 @@ class WeatherForecast():
 
         response = requests.get(mdx_url)
 
-        self._check_response(response)
+        self._check_response(response, function_tag=variables["action"])
         return response
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
@@ -152,16 +150,34 @@ class WeatherForecast():
             print("All sites have been added.")
             print(self.forecast_sites)
 
-    def get_site_edit(self, site_id:int, **kwargs) -> None:
-        variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
+    def get_site_edit(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
+        """
+        Edit name or position (longitude and latitude)
+        """
+        variables = {
             'action': 'siteedit',
             'site_id': site_id
         }
+        string = ""
 
-        # TODO lat e lon insieme per forza
-        # e chiama check_variables
+        # Check if kwargs contains 'name' or 'position'
+        if 'name' in kwargs:
+            variables['name'] = kwargs['name']
+            string += f"New name: {kwargs['name']}. "
 
-        response = self._send_get_request(variables)
+        if 'position' in kwargs:
+            position = kwargs['position']
+            if isinstance(position, dict) and 'longitude' in position and 'latitude' in position:
+                variables['longitude'] = position['longitude']
+                variables['latitude'] = position['latitude']
+                string += f"New position: {kwargs['position']}. "
+            else:
+                raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
+
+        self._send_get_request(variables)
+
+        if print_is_requested:
+            print(f"Site with ID {site_id} has been edited: {string}")
 
     def get_site_delete(self, site_id:int, print_is_requested:bool=True) -> None:
         variables = {
