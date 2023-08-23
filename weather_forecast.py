@@ -1,7 +1,10 @@
 import requests
+import time
 import json
 import pandas as pd
 from bs4 import BeautifulSoup
+import tkinter as tk
+from tkinter import filedialog
 
 class WeatherForecast():
     """
@@ -43,6 +46,9 @@ class WeatherForecast():
         print(self.forecast_sites)
     
     def _check_variables(self, variables:dict) -> None:
+        """
+        Check if the variables are valid.
+        """
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
             'site_id': (int, None, None),
             'name': (str, None, None),
@@ -78,6 +84,9 @@ class WeatherForecast():
                     #     raise ValueError(f'Site ID {value} is not valid.')
             
     def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
+        """
+        Check if the response is valid.
+        """
         content_type = response.headers.get('Content-Type')
 
         if 'application/json' in content_type:
@@ -98,18 +107,24 @@ class WeatherForecast():
             print(f'Unknown content type from {function_tag}.')
             
     def _send_get_request(self, variables:dict) -> requests.models.Response:
+        """
+        Format the URL and send a GET request.
+        """
         self._check_variables(variables)
 
         mdx_url = f'{self.api_website}key={self.key}&service={self.service}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
 
-        response = requests.get(mdx_url)
+        response = requests.get(mdx_url, timeout=10)
 
         self._check_response(response, function_tag=variables["action"])
         return response
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
+        """
+        TODO
+        """
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
             'action': 'siteadd',
             'format': self.format,
@@ -137,6 +152,9 @@ class WeatherForecast():
             print(f'Site with name {name} has been added.')
 
     def add_sites(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
+        """
+        TODO
+        """
         if not isinstance(dataframe, pd.DataFrame):
             raise ValueError('dataframe must be a Pandas DataFrame.')
 
@@ -181,6 +199,9 @@ class WeatherForecast():
             print(f"Site with ID {site_id} has been edited: {string}")
 
     def get_site_delete(self, site_id:int, print_is_requested:bool=True) -> None:
+        """
+        TODO
+        """
         variables = {
             'action': 'sitedelete',
             'site_id': site_id
@@ -193,6 +214,9 @@ class WeatherForecast():
             print(f'Site with id {site_id} has been removed.')
 
     def delete_all_sites(self, print_is_requested:bool=True) -> None:
+        """
+        TODO
+        """
         for _, row in self.forecast_sites.iterrows():
             site_id = row['site_id']
             self.get_site_delete(site_id, print_is_requested=print_is_requested)
@@ -202,6 +226,9 @@ class WeatherForecast():
             print(self.forecast_sites)
 
     def get_site_info(self, print_is_requested:bool=True) -> requests.models.Response:
+        """
+        TODO
+        """
         variables = {
             'action': 'siteinfo',
             'format': self.format
@@ -213,21 +240,49 @@ class WeatherForecast():
             print(json.dumps(response_formatted, indent=2))
         return response
 
-    def get_solar_forecast(self) -> None:
+    def get_solar_forecast(self) -> pd.DataFrame:
+        """
+        TODO
+        """
         variables = {
             'action': 'getforecast',
             'format': self.format
         }
         response = self._send_get_request(variables)
 
-    def get_solar_forecast_cloudmove(self) -> None:
+        response_dict = response.json()
+        response_pd = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
+        return response_pd
+
+    def get_solar_forecast_cloudmove(self) -> pd.DataFrame:
+        """
+        TODO
+        """
         variables = {
             'action': 'getforecast_cloudmove',
             'format': self.format
         }
         response = self._send_get_request(variables)
+        response_dict = response.json()
 
-    def save_raw_data() -> None:
-        # TODO SAVE SELF.FORECAST_SITES AS CSV FILE
-        # save data in 3D matrix space-time+variable in pandas
-        pass
+    def save_raw_data(self) -> None:
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        
+        # Remember the last chosen directory
+        initial_dir = getattr(self, 'last_save_directory', '')
+        
+        file_path = filedialog.asksaveasfilename(
+            initialdir=initial_dir,
+            title='Save Forecast Sites as CSV',
+            filetypes=[('CSV files', '*.csv')]
+        )
+        
+        if file_path:
+            current_time = time.strftime("%Y%m%d-%H%M%S")
+            self.forecast_sites.to_csv(f'forecast_sites_{current_time}.csv', file_path, index=False)
+            print(f'Forecast sites saved to {file_path}')
+            
+            # Remember the chosen directory for next time
+            self.last_save_directory = '/'.join(file_path.split('/')[:-1])
+        
