@@ -23,7 +23,7 @@ class WeatherForecast():
     format: str = 'json'
 
     def __init__(self) -> None:
-        self.column_names = ['name', 'site_id', 'longitude', 'latitude']
+        self.column_names = ['name', 'site_id', 'longitude', 'latitude', 'altitude']
         self.forecast_sites = pd.DataFrame(columns=self.column_names)
 
         # Retrieve site information and populate the forecast_sites DataFrame
@@ -36,8 +36,9 @@ class WeatherForecast():
                 name_extracted = site_info['name']
                 longitude_extracted = site_info['longitude']
                 latitude_extracted = site_info['latitude']
+                altitude_extracted = site_info['altitude']
 
-                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted]]
+                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted, altitude_extracted]]
                 extracted_values_pd = pd.DataFrame(extracted_values, columns=self.column_names)
 
                 self.forecast_sites = pd.concat([self.forecast_sites, extracted_values_pd], ignore_index=True)
@@ -141,9 +142,10 @@ class WeatherForecast():
         site_id_extracted = response_dict["payload"]["solarforecast"]["site"]["id"]
         longitude_extracted = response_dict["payload"]["solarforecast"]["site"]["longitude"]
         latitude_extracted = response_dict["payload"]["solarforecast"]["site"]["latitude"]
+        altitude_extracted = response_dict["payload"]["solarforecast"]["site"]["altitude"]
 
         # Create a new DataFrame with extracted values and assign to corresponding columns
-        response_data = [[name, site_id_extracted, longitude_extracted, latitude_extracted]]
+        response_data = [[name, site_id_extracted, longitude_extracted, latitude_extracted, altitude_extracted]]
         response_df = pd.DataFrame(response_data, columns=self.column_names)
 
         self.forecast_sites = pd.concat([self.forecast_sites, response_df], ignore_index=True)
@@ -264,6 +266,18 @@ class WeatherForecast():
         }
         response = self._send_get_request(variables)
         response_dict = response.json()
+        sites_data = response_dict["payload"]["solarforecast"]["sites"]
+
+        if sites_data != []:
+            for site_id, site_info in sites_data.items():
+                name_extracted = site_info['name']
+                longitude_extracted = site_info['longitude']
+                latitude_extracted = site_info['latitude']
+
+                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted]]
+                extracted_values_pd = pd.DataFrame(extracted_values, columns=self.column_names)
+
+                self.forecast_sites = pd.concat([self.forecast_sites, extracted_values_pd], ignore_index=True)
 
     def save_raw_data(self) -> None:
         root = tk.Tk()
