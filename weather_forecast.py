@@ -20,8 +20,22 @@ class WeatherForecast():
     format: str = 'json'
 
     def __init__(self) -> None:
-        self.sites_data = pd.DataFrame()
-        self.name_id_dict: dict = dict()
+        self.column_names = ['name', 'site_id', 'longitude', 'latitude']
+        self.forecast_sites = pd.DataFrame(columns=self.column_names)
+
+        response = self.get_site_info(print_is_requested=False)
+        response_dict = response.json()
+
+        sites_data = response_dict["payload"]["solarforecast"]["sites"]
+        for site_id, site_info in sites_data.items():
+            name_extracted = sites_data[str(site_id)]['name']
+            longitude_extracted = sites_data[str(site_id)]['longitude']
+            latitude_extracted = sites_data[str(site_id)]['latitude']
+
+            extracted_values = [[name_extracted, site_id, longitude_extracted, latitude_extracted]]
+            extracted_values_pd = pd.DataFrame(extracted_values, columns=self.column_names)
+
+            self.forecast_sites = pd.concat([self.forecast_sites, extracted_values_pd], ignore_index=True)
     
     def check_variables(self, variables:dict) -> None:
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
@@ -52,7 +66,7 @@ class WeatherForecast():
                 # Check if the site id is valid
                 if variable == 'site_id':
                     response = self.get_site_info(print_is_requested=False)
-                    response_dict = json.loads(response.text)
+                    response_dict = response.json()
                     
                     sites_id = response_dict["payload"]["solarforecast"]["sites"].keys()
                     if str(value) not in set(sites_id):
@@ -61,8 +75,10 @@ class WeatherForecast():
     def check_response(self, response:requests.models.Response) -> None:
         content_type = response.headers.get('Content-Type')
 
+        # TODO RECEIVE THE ACTION AND PRINT ALSO FROM WHERE IT WAS CALLED
+
         if 'application/json' in content_type:
-            response_dict = json.loads(response.text) # equivalent to = response.json()
+            response_dict = response.json() # equivalent to = json.loads(response.text)
             print(f'Response status: {response_dict["status"]}')
 
         elif 'text/html' in content_type:
@@ -101,10 +117,38 @@ class WeatherForecast():
             'inclination': inclination
         }
 
-        self.send_get_request(variables)
+        response = self.send_get_request(variables)
+        response_dict = response.json()
+
+        # Extract the required information from response_dict
+        site_id = response_dict['payload']['solarforecast']['sites'][str(name)]['id']
+        longitude_extracted = response_dict['payload']['solarforecast']['sites'][str(name)]['longitude']
+        latitude_extracted = response_dict['payload']['solarforecast']['sites'][str(name)]['latitude']
+
+        # Extract column names from self.forecast_sites
+        column_names = self.forecast_sites.columns
+
+        # Create a new DataFrame with extracted values and assign to corresponding columns
+        response_data = [[name, site_id, longitude_extracted, latitude_extracted]]
+        response_df = pd.DataFrame(response_data, columns=column_names)
+
+        # Concatenate response_df to forecast_sites
+        self.forecast_sites = pd.concat([self.forecast_sites, response_df], ignore_index=True)
 
         if print_is_requested:
             print(f'Site with name {name} has been added.')
+
+    def get_sites_add(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
+        if not isinstance(dataframe, pd.DataFrame):
+            raise ValueError('dataframe must be a Pandas DataFrame.')
+
+        for index, row in dataframe.iterrows():
+            name = str(index)
+            latitude = row['Latitude']
+            longitude = row['Longitude']
+            
+            # Call get_site_add using the extracted values
+            self.get_site_add(name=name, latitude=latitude, longitude=longitude, print_is_requested=print_is_requested)
 
     def get_site_edit(self, site_id:int, **kwargs) -> None:
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
@@ -128,6 +172,11 @@ class WeatherForecast():
         if print_is_requested:
             print(f'Site with id {site_id} has been removed.')
 
+    def get_sites_delete(self, dataframe:pd.DataFrame, delete_all:bool=False, print_is_requested:bool=True) -> None:
+        if delete_all:
+            print("")
+            # delete all sites
+
     def get_site_info(self, print_is_requested:bool=True) -> requests.models.Response:
         variables = {
             'action': 'siteinfo',
@@ -137,13 +186,13 @@ class WeatherForecast():
         response = self.send_get_request(variables)
 
         if print_is_requested:
-            print(json.dumps(response, indent=2))
+            print(json.dumps(response.text, indent=2)) # TODO CORRECT THIS PRINT AS IT WAS BEFORE
 
         return response
 
     def find_site_id(self, name:str) -> int:
         response = self.get_site_info(print_is_requested=False)
-        response_dict = json.loads(response.text)
+        response_dict = response.json()
 
         sites_data = response_dict["payload"]["solarforecast"]["sites"]
         for site_id, site_info in sites_data.items():
@@ -155,12 +204,13 @@ class WeatherForecast():
 
     def find_name_id(self, print_is_requested:bool=True) -> None:
         response = self.get_site_info(print_is_requested=False)
-        response_dict = json.loads(response.text)
+        response_dict = response.json()
 
         sites_data = response_dict["payload"]["solarforecast"]["sites"]
         # TODO expand this for loop
         name_id_dict = {site_data["name"]: site_data["id"] for site_data in sites_data.values()}
         self.name_id_dict = name_id_dict # TODO sfruttare questo self?
+        # TODO CHANGE THE STRUCTURE TO PANDAS: NAME, ID, AND THE REST OF INFORMATION
 
         if print_is_requested:
             print('The list of all name-id for sites:')
@@ -186,9 +236,8 @@ class WeatherForecast():
         # save data in 3D matrix space-time+variable in pandas
         pass
 
-api = WeatherForecast()
-
+# api = WeatherForecast()
 # id = api.find_site_id(name="Darwin")
 # api.find_name_id(print_is_requested=True)
 # api.get_site_add("testAdd",-12.39828502488282,130.88590799669225)
-api.find_name_id(print_is_requested=True)
+# api.find_name_id(print_is_requested=True)

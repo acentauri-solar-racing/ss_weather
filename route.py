@@ -8,7 +8,7 @@ class Route():
     
     def __init__(self) -> None:
         self.route_data = self.load_route_csv()
-        self.kdtree = KDTree(self.route_data[['Latitude', 'Longitude']].values)
+        self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
 
     def load_route_csv(self):
         script_directory = os.path.dirname(os.path.abspath(__file__))
@@ -21,7 +21,7 @@ class Route():
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
             'number_sites': (int, 1, 3000),
-            'delta_spacing': (float, 10, 500000) # in meters
+            'delta_spacing': (float, 1, 3000000) # in meters
         }
 
         for variable, value in variables.items():
@@ -53,15 +53,15 @@ class Route():
 
         closest_point = self.find_closest_point(position=current_position)
         start_index = closest_point.name
-        start_distance = self.route_data.iloc[start_index]['CumDistance']
+        start_distance = self.route_data.iloc[start_index]['cumDistance']
 
         # Cut data and start the cumulative distance from the new position
         cut_data = self.route_data.iloc[start_index:].copy()
-        cut_data['CumDistance'] -= start_distance
+        cut_data['cumDistance'] -= start_distance
         # Drop old indexing
         cut_data = cut_data.reset_index(drop=True)
-        # Delete Surface type
-        cut_data = cut_data.drop('Surface', axis=1)
+        # Delete surface type
+        cut_data = cut_data.drop('surface', axis=1)
 
         if number_sites is None and delta_spacing is None:
             print(cut_data)
@@ -70,7 +70,7 @@ class Route():
         else:
             add_last_point_is_true: bool = True
             if number_sites is not None:
-                delta_spacing = cut_data['CumDistance'].max() / (number_sites - 1) # correction of first entry
+                delta_spacing = cut_data['cumDistance'].max() / (number_sites - 1) # correction of first entry
                 add_last_point_is_true = False
 
             # Save variables and check
@@ -81,27 +81,27 @@ class Route():
             self.check_variables(variables)
         
             # Find value of interpolation points
-            number_inter_point = int(cut_data['CumDistance'].max() / delta_spacing)
+            number_inter_point = int(cut_data['cumDistance'].max() / delta_spacing)
             # Define the monotonically-increasing equally-spaced vector
             x = np.arange(number_inter_point + 1) * delta_spacing
 
             # Insert last point
             if add_last_point_is_true:
-                x = np.append(x, cut_data['CumDistance'].max())
+                x = np.append(x, cut_data['cumDistance'].max())
 
             # Interpolation points
-            xp = cut_data['CumDistance']
+            xp = cut_data['cumDistance']
 
             interpolated_data = pd.DataFrame()
             for column in cut_data.columns:
 
-                if column == 'Maxspeed':
+                if column == 'maxSpeed':
                     indices = np.searchsorted(xp, x, side='right') - 1
                     pd_values = pd.DataFrame({column: cut_data[column].iloc[indices]})
                     pd_values = pd_values.reset_index(drop=True)
                     interpolated_data = pd.concat([interpolated_data, pd_values], axis=1)
 
-                elif column == 'CumDistance':
+                elif column == 'cumDistance':
                     interpolated_data[column] = x.tolist()
 
                 else:
