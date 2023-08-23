@@ -23,10 +23,11 @@ class WeatherForecast():
         self.column_names = ['name', 'site_id', 'longitude', 'latitude']
         self.forecast_sites = pd.DataFrame(columns=self.column_names)
 
+        # Retrieve site information and populate the forecast_sites DataFrame
         response = self.get_site_info(print_is_requested=False)
         response_dict = response.json()
-
         sites_data = response_dict["payload"]["solarforecast"]["sites"]
+
         if sites_data != []:
             for site_id, site_info in sites_data.items():
                 name_extracted = site_info['name']
@@ -186,7 +187,6 @@ class WeatherForecast():
         }
         self._send_get_request(variables)
 
-        # Update self.forecast_sites by removing the corresponding row
         self.forecast_sites = self.forecast_sites[self.forecast_sites['site_id'] != site_id]
 
         if print_is_requested:
@@ -209,7 +209,8 @@ class WeatherForecast():
         response = self._send_get_request(variables)
 
         if print_is_requested:
-            print(json.dumps(response.text, indent=2)) # TODO CORRECT THIS PRINT AS IT WAS BEFORE
+            response_formatted = json.loads(response.text)
+            print(json.dumps(response_formatted, indent=2))
         return response
 
     def get_solar_forecast(self) -> None:
@@ -227,5 +228,6 @@ class WeatherForecast():
         response = self._send_get_request(variables)
 
     def save_raw_data() -> None:
+        # TODO SAVE SELF.FORECAST_SITES AS CSV FILE
         # save data in 3D matrix space-time+variable in pandas
         pass
