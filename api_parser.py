@@ -34,7 +34,7 @@ class ApiParser():
 
         else:
             print(f'Unknown content type from {function_tag}.')
-
+    
     def parse_site_add_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
         self._check_response(response, function_tag)
 
@@ -79,7 +79,7 @@ class ApiParser():
     
     def parse_solar_forecast_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
         self._check_response(response, function_tag)
-        
+
         # TODO
         response_dict = response.json()
 
