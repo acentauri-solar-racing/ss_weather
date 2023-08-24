@@ -1,12 +1,8 @@
 import requests
-import time
-import json
 import pandas as pd
-from bs4 import BeautifulSoup
-import tkinter as tk
-from tkinter import filedialog
+from api_parser import Parser
 
-class WeatherForecast():
+class ApiRequester():
     """
     Class for interacting with the weather forecast API from Meteotest.
 
@@ -23,6 +19,9 @@ class WeatherForecast():
     FORMAT: str = 'json'
 
     def __init__(self) -> None:
+
+        # TODO DOVE SPOSTARE QUESTO?
+
         self.column_names = ['name', 'site_id', 'longitude', 'latitude', 'altitude']
         self.forecast_sites = pd.DataFrame(columns=self.column_names)
 
@@ -42,9 +41,8 @@ class WeatherForecast():
                 extracted_values_pd = pd.DataFrame(extracted_values, columns=self.column_names)
 
                 self.forecast_sites = pd.concat([self.forecast_sites, extracted_values_pd], ignore_index=True)
-        #TODO IMPROVE PRINT
-        print("Current sites:")
-        print(self.forecast_sites)
+
+        print(f"Current sites saved at Meteotest: \n, {self.forecast_sites}")
     
     def _check_variables(self, variables:dict) -> None:
         """
@@ -76,6 +74,7 @@ class WeatherForecast():
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
                     
                 # Check site id
+                # TODO SPOSTARE QUESTO CHE FA IL CHECK NEL PANDAS SALVATO FUORI DA QUESTA CLASSE DEL SELF
                 # if variable == 'site_id':
                     # response = self.get_site_info(print_is_requested=False)
                     # response_dict = response.json()
@@ -83,29 +82,6 @@ class WeatherForecast():
                     # sites_id = response_dict["payload"]["solarforecast"]["sites"].keys()
                     # if str(value) not in set(sites_id):
                     #     raise ValueError(f'Site ID {value} is not valid.')
-            
-    def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
-        """
-        Check if the response is valid.
-        """
-        content_type = response.headers.get('Content-Type')
-
-        if 'application/json' in content_type:
-            response_dict = response.json() # equivalent to = json.loads(response.text)
-            print(f'Response status from {function_tag}: {response_dict["status"]}.')
-
-        elif 'text/html' in content_type:
-            html_content = response.text
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Find the <div> with class "alert alert-info" and get its text
-            info_div = soup.find('div', class_='alert alert-info')
-            if info_div:
-                status_text = info_div.get_text().strip()
-                print(f'Response status from {function_tag}: {status_text}.')
-
-        else:
-            print(f'Unknown content type from {function_tag}.')
             
     def _send_get_request(self, variables:dict) -> requests.models.Response:
         """
@@ -119,12 +95,11 @@ class WeatherForecast():
 
         response = requests.get(mdx_url, timeout=10)
 
-        self._check_response(response, function_tag=variables["action"])
         return response
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
         """
-        TODO
+        Call the API to add a new site.
         """
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
             'action': 'siteadd',
@@ -136,42 +111,15 @@ class WeatherForecast():
             'inclination': inclination
         }
         response = self._send_get_request(variables)
-        response_dict = response.json()
 
         # Extract the required information from response_dict
-        site_id_extracted = response_dict["payload"]["solarforecast"]["site"]["id"]
-        longitude_extracted = response_dict["payload"]["solarforecast"]["site"]["longitude"]
-        latitude_extracted = response_dict["payload"]["solarforecast"]["site"]["latitude"]
-        altitude_extracted = response_dict["payload"]["solarforecast"]["site"]["altitude"]
+        response_df = Parser.parse_site_add_response(response, function_tag=variables["action"])
 
-        # Create a new DataFrame with extracted values and assign to corresponding columns
-        response_data = [[name, site_id_extracted, longitude_extracted, latitude_extracted, altitude_extracted]]
-        response_df = pd.DataFrame(response_data, columns=self.column_names)
-
+        # Add the new site to the forecast_sites DataFrame
         self.forecast_sites = pd.concat([self.forecast_sites, response_df], ignore_index=True)
 
         if print_is_requested:
             print(f'Site with name {name} has been added.')
-
-    def add_sites(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
-        if not isinstance(dataframe, pd.DataFrame):
-            raise ValueError('dataframe must be a Pandas DataFrame.')
-
-        for index, row in dataframe.iterrows():
-            name = str(index)
-            latitude = row['latitude']
-            longitude = row['longitude']
-            cumDistance = row['cumDistance']
-            # TODO CHECK DATAFRAME STRUCTURE
-
-            self.get_site_add(name=name, latitude=latitude, longitude=longitude, cumDistance=cumDistance, print_is_requested=print_is_requested)
-
-        if print_is_requested:
-            print("Requested sites have been added.")
-            print(self.forecast_sites)
 
     def get_site_edit(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
         """
@@ -181,6 +129,7 @@ class WeatherForecast():
             'action': 'siteedit',
             'site_id': site_id
         }
+
         string = ""
 
         # Check if kwargs contains 'name' or 'position'
@@ -190,6 +139,8 @@ class WeatherForecast():
 
         if 'position' in kwargs:
             position = kwargs['position']
+
+            # Check if position is a dictionary with 'longitude' and 'latitude' keys
             if isinstance(position, dict) and 'longitude' in position and 'latitude' in position:
                 variables['longitude'] = position['longitude']
                 variables['latitude'] = position['latitude']
@@ -198,6 +149,14 @@ class WeatherForecast():
                 raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
 
         self._send_get_request(variables)
+
+        # Update the forecast_sites DataFrame
+        if 'name' in kwargs:
+            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'name'] = kwargs['name']
+        
+        if 'position' in kwargs:
+            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'longitude'] = position['longitude']
+            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'latitude'] = position['latitude']
 
         if print_is_requested:
             print(f"Site with ID {site_id} has been edited: {string}")
@@ -212,41 +171,13 @@ class WeatherForecast():
         }
         self._send_get_request(variables)
 
+        # Update the forecast_sites DataFrame
         self.forecast_sites = self.forecast_sites[self.forecast_sites['site_id'] != site_id]
 
         if print_is_requested:
             print(f'Site with id {site_id} has been removed.')
 
-    def delete_sites(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
-        if not isinstance(dataframe, pd.DataFrame):
-            raise ValueError('dataframe must be a Pandas DataFrame.')
-
-        for _, row in dataframe.iterrows():
-            site_id = row['site_id']
-            # TODO CHECK DATAFRAME STRUCTURE
-
-            self.get_site_delete(site_id, print_is_requested=print_is_requested)
-
-        if print_is_requested:
-            print("Requested sites have been deleted.")
-            print(self.forecast_sites)
-
-    def delete_all_sites(self, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
-        for _, row in self.forecast_sites.iterrows():
-            site_id = row['site_id']
-            self.get_site_delete(site_id, print_is_requested=print_is_requested)
-        
-        if print_is_requested:
-            print("All sites have been deleted.")
-            print(self.forecast_sites)
-
-    def get_site_info(self, print_is_requested:bool=True) -> requests.models.Response:
+    def get_site_info(self, print_is_requested:bool=True) -> requests.models.Response: # TODO FARLO PANDAS GIA QUI?
         """
         TODO
         """
@@ -256,12 +187,15 @@ class WeatherForecast():
         }
         response = self._send_get_request(variables)
 
+        # Parse the response
+        response_formatted = Parser.parse_site_info_response(response)
+
         if print_is_requested:
-            response_formatted = json.loads(response.text)
-            print(json.dumps(response_formatted, indent=2))
+            print(f"Site information have been retrieved. \n {response_formatted}")
+
         return response
 
-    def get_solar_forecast(self) -> pd.DataFrame:
+    def get_solar_forecast(self, print_is_requested:bool=True) -> pd.DataFrame:
         """
         TODO
         """
@@ -270,15 +204,16 @@ class WeatherForecast():
             'format': self.FORMAT
         }
         response = self._send_get_request(variables)
+        
+        # Parse the response
+        response_pd = Parser.parse_solar_forecast_response(response)
 
-        response_dict = response.json()
+        if print_is_requested:
+            print("Solar forecast have been retrieved.")
 
-        index = pd.MultiIndex.from_product([[], [], []], names=['space', 'time', 'variable'])
-
-        response_pd = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
         return response_pd
 
-    def get_solar_forecast_cloudmove(self) -> pd.DataFrame:
+    def get_solar_forecast_cloudmove(self, print_is_requested:bool=True) -> pd.DataFrame:
         """
         TODO
         """
@@ -287,38 +222,11 @@ class WeatherForecast():
             'format': self.FORMAT
         }
         response = self._send_get_request(variables)
-        response_dict = response.json()
-        sites_data = response_dict["payload"]["solarforecast"]["sites"]
 
-        if sites_data != []:
-            for site_id, site_info in sites_data.items():
-                name_extracted = site_info['name']
-                longitude_extracted = site_info['longitude']
-                latitude_extracted = site_info['latitude']
+        # Parse the response
+        response_pd = Parser.parse_solar_forecast_cloudmove_response(response)
 
-                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted]]
-                extracted_values_pd = pd.DataFrame(extracted_values, columns=self.column_names)
+        if print_is_requested:
+            print("Solar forecast cloudmove have been retrieved.")
 
-                self.forecast_sites = pd.concat([self.forecast_sites, extracted_values_pd], ignore_index=True)
-
-    def save_raw_data(self) -> None:
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        
-        # Remember the last chosen directory
-        initial_dir = getattr(self, 'last_save_directory', '')
-        
-        file_path = filedialog.asksaveasfilename(
-            initialdir=initial_dir,
-            title='Save Forecast Sites as CSV',
-            filetypes=[('CSV files', '*.csv')]
-        )
-        
-        if file_path:
-            current_time = time.strftime("%Y%m%d-%H%M%S")
-            self.forecast_sites.to_csv(f'forecast_sites_{current_time}.csv', file_path, index=False)
-            print(f'Forecast sites saved to {file_path}')
-            
-            # Remember the chosen directory for next time
-            self.last_save_directory = '/'.join(file_path.split('/')[:-1])
-        
+        return response_pd

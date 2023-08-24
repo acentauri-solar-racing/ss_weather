@@ -1,6 +1,6 @@
 import pandas as pd
 
-class WeatherForecastPreprocess():
+class DataPreprocess():
 
     def __init__(self) -> None:
         pass

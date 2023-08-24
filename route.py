@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
-import constants
+import CONSTANTS as constants
 from scipy.spatial import KDTree
 
 class Route():
@@ -48,7 +48,7 @@ class Route():
         closest_point = self.route_data.iloc[nearest_point_index]
         return closest_point
 
-    def get_final_data(self, current_position:dict, number_sites:int=None, delta_spacing:float=None) -> pd.DataFrame:
+    def get_route_data(self, current_position:dict, number_sites:int=None, delta_spacing:float=None) -> pd.DataFrame:
         self._check_variables(current_position)
 
         closest_point = self.find_closest_point(position=current_position)
