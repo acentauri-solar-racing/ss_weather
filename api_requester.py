@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
-from api_parser import Parser
+from api_parser import ApiParser
+from api_data_controller import ApiDataController
 
 class ApiRequester():
     """
@@ -19,30 +20,7 @@ class ApiRequester():
     FORMAT: str = 'json'
 
     def __init__(self) -> None:
-
-        # TODO DOVE SPOSTARE QUESTO?
-
-        self.column_names = ['name', 'site_id', 'longitude', 'latitude', 'altitude']
-        self.forecast_sites = pd.DataFrame(columns=self.column_names)
-
-        # Retrieve site information and populate the forecast_sites DataFrame
-        response = self.get_site_info(print_is_requested=False)
-        response_dict = response.json()
-        sites_data = response_dict["payload"]["solarforecast"]["sites"]
-
-        if sites_data != []:
-            for site_id, site_info in sites_data.items():
-                name_extracted = site_info['name']
-                longitude_extracted = site_info['longitude']
-                latitude_extracted = site_info['latitude']
-                altitude_extracted = site_info['altitude']
-
-                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted, altitude_extracted]]
-                extracted_values_pd = pd.DataFrame(extracted_values, columns=self.column_names)
-
-                self.forecast_sites = pd.concat([self.forecast_sites, extracted_values_pd], ignore_index=True)
-
-        print(f"Current sites saved at Meteotest: \n, {self.forecast_sites}")
+        pass
     
     def _check_variables(self, variables:dict) -> None:
         """
@@ -113,13 +91,13 @@ class ApiRequester():
         response = self._send_get_request(variables)
 
         # Extract the required information from response_dict
-        response_df = Parser.parse_site_add_response(response, function_tag=variables["action"])
+        response_df = ApiParser.parse_site_add_response(response, function_tag=variables['action'])
 
         # Add the new site to the forecast_sites DataFrame
-        self.forecast_sites = pd.concat([self.forecast_sites, response_df], ignore_index=True)
+        ApiDataController.modify_site_add_data(dataframe=response_df, print_is_requested=print_is_requested)
 
         if print_is_requested:
-            print(f'Site with name {name} has been added.')
+            print(f'Site with name {name} has been added in the API.')
 
     def get_site_edit(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
         """
@@ -129,7 +107,6 @@ class ApiRequester():
             'action': 'siteedit',
             'site_id': site_id
         }
-
         string = ""
 
         # Check if kwargs contains 'name' or 'position'
@@ -147,16 +124,17 @@ class ApiRequester():
                 string += f"New position: {kwargs['position']}. "
             else:
                 raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
+        
+        else:
+            print_is_requested = False
+            print("Nothing to edit.")
 
         self._send_get_request(variables)
 
-        # Update the forecast_sites DataFrame
-        if 'name' in kwargs:
-            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'name'] = kwargs['name']
+        # Parser not needed, because the response is not interesting
         
-        if 'position' in kwargs:
-            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'longitude'] = position['longitude']
-            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'latitude'] = position['latitude']
+        # Edit the new site to the forecast_sites DataFrame
+        ApiDataController.modify_site_edit_data(site_id=site_id, print_is_requested=False, **kwargs)
 
         if print_is_requested:
             print(f"Site with ID {site_id} has been edited: {string}")
@@ -171,13 +149,15 @@ class ApiRequester():
         }
         self._send_get_request(variables)
 
-        # Update the forecast_sites DataFrame
-        self.forecast_sites = self.forecast_sites[self.forecast_sites['site_id'] != site_id]
+        # Parser not needed, because the response is not interesting
+
+        # Delete the new site to the forecast_sites DataFrame
+        ApiDataController.modify_site_delete_data(site_id=site_id, print_is_requested=False)
 
         if print_is_requested:
             print(f'Site with id {site_id} has been removed.')
 
-    def get_site_info(self, print_is_requested:bool=True) -> requests.models.Response: # TODO FARLO PANDAS GIA QUI?
+    def get_site_info(self, print_is_requested:bool=True) -> pd.DataFrame:
         """
         TODO
         """
@@ -188,12 +168,12 @@ class ApiRequester():
         response = self._send_get_request(variables)
 
         # Parse the response
-        response_formatted = Parser.parse_site_info_response(response)
+        response_df, response_formatted = ApiParser.parse_site_info_response(response, function_tag=variables['action'])
 
         if print_is_requested:
-            print(f"Site information have been retrieved. \n {response_formatted}")
+            print(f"Site information have been retrieved: \n {response_formatted}")
 
-        return response
+        return response_df
 
     def get_solar_forecast(self, print_is_requested:bool=True) -> pd.DataFrame:
         """
@@ -206,7 +186,7 @@ class ApiRequester():
         response = self._send_get_request(variables)
         
         # Parse the response
-        response_pd = Parser.parse_solar_forecast_response(response)
+        response_pd = ApiParser.parse_solar_forecast_response(response)
 
         if print_is_requested:
             print("Solar forecast have been retrieved.")
@@ -224,7 +204,7 @@ class ApiRequester():
         response = self._send_get_request(variables)
 
         # Parse the response
-        response_pd = Parser.parse_solar_forecast_cloudmove_response(response)
+        response_pd = ApiParser.parse_solar_forecast_cloudmove_response(response)
 
         if print_is_requested:
             print("Solar forecast cloudmove have been retrieved.")

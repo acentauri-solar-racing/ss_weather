@@ -2,14 +2,15 @@ import pandas as pd
 import requests
 import json
 from bs4 import BeautifulSoup
+import CONSTANTS as constants
 
-class Parser():
+class ApiParser():
     """
     Class for parsing the API responses.
     """
 
     def __init__(self) -> None:
-        self.column_names = ['name', 'site_id', 'longitude', 'latitude', 'altitude'] # TODO BRING TO CONSTANTS?
+        self.column_names = constants.API_COLUMN_NAMES
 
     def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
         """
@@ -51,28 +52,51 @@ class Parser():
         response_df = pd.DataFrame(response_data, columns=self.column_names)
         return response_df
     
-    def parse_site_info_response(self, response:requests.models.Response, print_is_requested:bool=True): # TODO RETURN
+    def parse_site_info_response(self, response:requests.models.Response, function_tag:str): #TODO
+        self._check_response(response, function_tag)
+
+        response_dict = json.loads(response.text)
+
+        # Extract the required information from response_dict
+        response_formatted = json.dumps(response_dict, indent=2)
+
+        sites_data = response_dict["payload"]["solarforecast"]["sites"]
+
+        # Create a new DataFrame with extracted values and assign to corresponding columns
+        if sites_data != []:
+            for site_id, site_info in sites_data.items():
+                name_extracted = site_info['name']
+                longitude_extracted = site_info['longitude']
+                latitude_extracted = site_info['latitude']
+                altitude_extracted = site_info['altitude']
+
+                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted, altitude_extracted]]
+                response_df = pd.DataFrame(extracted_values, columns=self.column_names)
         
-        # TODO PORTARE QUESTO PRINT DIRETTO NEL GET_SITE_INFO E QUI PARSE DA JSON A PANDAS
-
-        response_formatted = json.loads(response.text)
-        response_formatted = json.dumps(response_formatted, indent=2)
-        return response_formatted
+        print("TODOOOOOOOOOOOOO")
+        print(type(response_formatted))
+        return response_df, response_formatted
     
-    def parse_solar_forecast_response(self, response:requests.models.Response) -> pd.DataFrame:
+    def parse_solar_forecast_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
+        self._check_response(response, function_tag)
+        
+        # TODO
         response_dict = response.json()
 
         index = pd.MultiIndex.from_product([[], [], []], names=['space', 'time', 'variable'])
 
-        response_pd = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
+        response_df = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
 
-        return response_pd
+        return response_df
     
-    def parse_solar_forecast_cloudmove_response(self, response:requests.models.Response) -> pd.DataFrame:
+    def parse_solar_forecast_cloudmove_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
+        self._check_response(response, function_tag)
+
+        # TODO
         response_dict = response.json()
 
         index = pd.MultiIndex.from_product([[], [], []], names=['space', 'time', 'variable'])
 
-        response_pd = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
+        response_df = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
 
-        return response_pd
+        return response_df
