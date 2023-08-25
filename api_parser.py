@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import Tuple
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -52,7 +53,7 @@ class ApiParser():
         response_df = pd.DataFrame(response_data, columns=self.column_names)
         return response_df
     
-    def parse_site_info_response(self, response:requests.models.Response, function_tag:str): #TODO
+    def parse_site_info_response(self, response:requests.models.Response, function_tag:str) -> Tuple[pd.DataFrame, str]:
         self._check_response(response, function_tag)
 
         response_dict = json.loads(response.text)
@@ -63,6 +64,7 @@ class ApiParser():
         sites_data = response_dict["payload"]["solarforecast"]["sites"]
 
         # Create a new DataFrame with extracted values and assign to corresponding columns
+        response_df = pd.DataFrame(columns=self.column_names)
         if sites_data != []:
             for site_id, site_info in sites_data.items():
                 name_extracted = site_info['name']
@@ -71,23 +73,27 @@ class ApiParser():
                 altitude_extracted = site_info['altitude']
 
                 extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted, altitude_extracted]]
-                response_df = pd.DataFrame(extracted_values, columns=self.column_names)
+                response_df = pd.concat([response_df, pd.DataFrame(extracted_values, columns=self.column_names)], ignore_index=True)
         
-        print("TODOOOOOOOOOOOOO")
-        print(type(response_formatted))
         return response_df, response_formatted
     
-    def parse_solar_forecast_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
+    def parse_solar_forecast_response(self, response: requests.models.Response, function_tag: str) -> pd.DataFrame:
         self._check_response(response, function_tag)
 
-        # TODO
         response_dict = response.json()
+        sites_data = response_dict["payload"]["solarforecast"]
 
-        index = pd.MultiIndex.from_product([[], [], []], names=['space', 'time', 'variable'])
+        # Create a MultiIndex DataFrame
+        index_levels = ['site_id', 'time', 'variable']
+        response_df = pd.DataFrame(columns=['value'], index=pd.MultiIndex.from_product([[], [], []], names=index_levels))
 
-        response_df = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
+        for site_id, site_forecast in sites_data.items():
+            for time, time_forecast in site_forecast.items():
+                for variable, variable_forecast in time_forecast.items():
+                    response_df.loc[(site_id, time, variable), 'value'] = variable_forecast
 
         return response_df
+
     
     def parse_solar_forecast_cloudmove_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
         self._check_response(response, function_tag)

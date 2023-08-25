@@ -116,11 +116,13 @@ class ApiRequester():
             'site_id': site_id
         }
         string = ""
+        correct_kwargs:bool = False
 
         # Check if kwargs contains 'name' or 'position'
         if 'name' in kwargs:
             variables['name'] = kwargs['name']
             string += f"New name: {kwargs['name']}. "
+            correct_kwargs = True
 
         if 'position' in kwargs:
             position = kwargs['position']
@@ -130,10 +132,11 @@ class ApiRequester():
                 variables['longitude'] = position['longitude']
                 variables['latitude'] = position['latitude']
                 string += f"New position: {kwargs['position']}. "
+                correct_kwargs = True
             else:
                 raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
         
-        else:
+        if not correct_kwargs:
             print_is_requested = False
             print("Nothing to edit.")
 
@@ -194,12 +197,12 @@ class ApiRequester():
         response = self._send_get_request(variables)
         
         # Parse the response
-        response_pd = self.parser.parse_solar_forecast_response(response)
+        response_df = self.parser.parse_solar_forecast_response(response, function_tag=variables['action'])
 
         if print_is_requested:
             print("Solar forecast have been retrieved.")
 
-        return response_pd
+        return response_df
 
     def get_solar_forecast_cloudmove(self, print_is_requested:bool=True) -> pd.DataFrame:
         """

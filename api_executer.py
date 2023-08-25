@@ -1,15 +1,13 @@
-import time
 import pandas as pd
 from api_requester import ApiRequester
-from api_data_controller import ApiData
 
 class ApiExecuter():
     """
     TODO
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, requester:ApiRequester) -> None:
+        self.requester = requester
 
     def add_sites(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
         """
@@ -24,10 +22,10 @@ class ApiExecuter():
             longitude = row['longitude']
             # TODO CHECK DATAFRAME STRUCTURE
 
-            ApiRequester.get_site_add(name=name, latitude=latitude, longitude=longitude, print_is_requested=print_is_requested)
+            self.requester.get_site_add(name=name, latitude=latitude, longitude=longitude, print_is_requested=print_is_requested)
 
         if print_is_requested:
-            print(f"Requested sites have been added: \n {ApiData.forecast_sites}")
+            print(f"Requested sites have been added: \n {self.requester.forecast_sites}")
 
     def delete_sites(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
         """
@@ -40,20 +38,20 @@ class ApiExecuter():
             site_id = row['site_id']
             # TODO CHECK DATAFRAME STRUCTURE
 
-            ApiRequester.get_site_delete(site_id, print_is_requested=print_is_requested)
+            self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
 
         if print_is_requested:
-            print(f"Requested sites have been deleted: \n {ApiData.forecast_sites}")
+            print(f"Requested sites have been deleted: \n {self.requester.forecast_sites}")
 
     def delete_all_sites(self, print_is_requested:bool=True) -> None:
         """
         TODO
         """
-        for _, row in ApiData.forecast_sites.iterrows():
+        for _, row in self.requester.forecast_sites.iterrows():
             # TODO CHECK DATAFRAME STRUCTURE
 
             site_id = row['site_id']
-            ApiRequester.get_site_delete(site_id, print_is_requested=print_is_requested)
+            self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
         
         if print_is_requested:
-            print(f"All sites have been deleted: \n {ApiData.forecast_sites}")
+            print(f"All sites have been deleted: \n {self.requester.forecast_sites}")
