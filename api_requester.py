@@ -215,10 +215,10 @@ class ApiRequester():
         response = self._send_get_request(variables)
 
         # Parse the response
-        response_pd = self.parser.parse_solar_forecast_cloudmove_response(response)
+        response_pd = self.parser.parse_solar_forecast_cloudmove_response(response, function_tag=variables['action'])
 
         if print_is_requested:
-            print("Solar forecast cloudmove have been retrieved.")
+            print("Solar forecast CloudMove have been retrieved.")
 
         return response_pd
 

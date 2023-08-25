@@ -100,11 +100,19 @@ class ApiParser():
     def parse_solar_forecast_cloudmove_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
         self._check_response(response, function_tag)
 
-        # TODO
         response_dict = response.json()
+        sites_data = response_dict["payload"]["solarforecast"]
 
-        index = pd.MultiIndex.from_product([[], [], []], names=['space', 'time', 'variable'])
+        data_to_concat = [
+            {
+                'site_id': site_id,
+                'time': time,
+                **time_forecast
+            }
+            for site_id, site_forecast in sites_data.items()
+            for time, time_forecast in site_forecast.items()
+        ]
 
-        response_df = pd.DataFrame(response_dict["payload"]["solarforecast"]["sites"])
+        response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id', 'time'])
 
         return response_df
