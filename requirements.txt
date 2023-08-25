@@ -2,3 +2,4 @@ pandas
 PyMySQL
 SQLAlchemy
 python-dotenv
+psychrolib

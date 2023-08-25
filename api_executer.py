@@ -47,7 +47,7 @@ class ApiExecuter():
         """
         TODO
         """
-        for _, row in self.requester.forecast_sites.iterrows():
+        for _, row in self.requester.forecast_sites.iterrows(): #SICURO CHE MEGLIO COSI E NON CHIMARE INFO? POTREBBERO ESSERE DIVERSI SE USATO POSTMAN
             # TODO CHECK DATAFRAME STRUCTURE
 
             site_id = row['site_id']

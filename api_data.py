@@ -12,6 +12,7 @@ class ApiData():
     def __init__(self, dataframe:pd.DataFrame) -> None:
         self.column_names = costants.API_COLUMN_NAMES
         self.forecast_sites = pd.DataFrame(columns=self.column_names)
+        self.last_save_directory = None
 
     def save_raw_data(self) -> None:
         root = tk.Tk()

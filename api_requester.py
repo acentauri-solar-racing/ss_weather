@@ -60,7 +60,7 @@ class ApiRequester():
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
                     
                 # Check site id
-                # TODO SPOSTARE QUESTO CHE FA IL CHECK NEL PANDAS SALVATO FUORI DA QUESTA CLASSE DEL SELF
+                # TODO FIND BETTER SEARCH ALGORITHM THAT CHECKS IF THE SITE ID IS PRESENT IN SELF.FORECAST_SITES
                 # if variable == 'site_id':
                     # response = self.get_site_info(print_is_requested=False)
                     # response_dict = response.json()
@@ -102,7 +102,7 @@ class ApiRequester():
         response_df = self.parser.parse_site_add_response(response, function_tag=variables['action'])
 
         # Add the new site to the forecast_sites DataFrame
-        self.modify_site_add_data(dataframe=response_df, print_is_requested=print_is_requested)
+        self._modify_site_add_data(dataframe=response_df, print_is_requested=print_is_requested)
 
         if print_is_requested:
             print(f'Site with name {name} has been added in the API.')
@@ -145,7 +145,7 @@ class ApiRequester():
         # Parser not needed, because the response is not interesting
         
         # Edit the new site to the forecast_sites DataFrame
-        self.modify_site_edit_data(site_id=site_id, print_is_requested=False, **kwargs)
+        self._modify_site_edit_data(site_id=site_id, print_is_requested=False, **kwargs)
 
         if print_is_requested:
             print(f"Site with ID {site_id} has been edited: {string}")
@@ -163,7 +163,7 @@ class ApiRequester():
         # Parser not needed, because the response is not interesting
 
         # Delete the new site to the forecast_sites DataFrame
-        self.modify_site_delete_data(site_id=site_id, print_is_requested=False)
+        self._modify_site_delete_data(site_id=site_id, print_is_requested=False)
 
         if print_is_requested:
             print(f'Site with id {site_id} has been removed.')
@@ -220,11 +220,9 @@ class ApiRequester():
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
 
-        return response_pd
-
-# Update the forecast_sites DataFrame    
+        return response_pd   
     
-    def modify_site_add_data(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
+    def _modify_site_add_data(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
         """
         TODO
         """
@@ -237,7 +235,7 @@ class ApiRequester():
         if print_is_requested:
             print(f"Add site has been saved: \n {self.forecast_sites}")
 
-    def modify_site_edit_data(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
+    def _modify_site_edit_data(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
         """
         TODO
         """
@@ -253,7 +251,7 @@ class ApiRequester():
         if print_is_requested:
             print(f"Edit site has been saved: \n {self.forecast_sites}.")
 
-    def modify_site_delete_data(self, site_id:int, print_is_requested:bool=True) -> None:
+    def _modify_site_delete_data(self, site_id:int, print_is_requested:bool=True) -> None:
         """
         TODO
         """
