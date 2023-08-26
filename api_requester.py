@@ -58,7 +58,9 @@ class ApiRequester():
                 if min_value is not None and max_value is not None:
                     if not (min_value <= value <= max_value):
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
-                    
+                
+                # TODO check post request
+
                 # Check site id
                 # TODO FIND BETTER SEARCH ALGORITHM THAT CHECKS IF THE SITE ID IS PRESENT IN SELF.FORECAST_SITES
                 # if variable == 'site_id':
@@ -82,6 +84,66 @@ class ApiRequester():
         response = requests.get(mdx_url, timeout=10)
 
         return response
+    
+    def _send_post_request(self, variables:dict) -> requests.models.Response:
+        """
+        Format the URL and send a POST request.
+        """
+        self._check_variables(variables)
+
+        mdx_url = f'{self.API_WEBSITE}key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
+        for key, value in variables.items():
+            mdx_url += f'&{key}={value}'
+
+        response = requests.post(mdx_url, timeout=10)
+
+        return response
+    
+    def post_add_measurement(self, site_id:int, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
+        """
+        TODO
+        """
+        # Check if dataframe is a Pandas DataFrame
+        if not isinstance(dataframe, pd.DataFrame):
+            raise ValueError('dataframe must be a Pandas DataFrame.')
+        
+        # Check if dataframe has the correct columns
+        column_names = ['SITE_ID', 'TIMESTAMP', 'GH']
+        if not set(dataframe.columns) == set(column_names):
+            raise ValueError(f"dataframe columns must be {self.column_names}. Received: {dataframe.columns}")
+        
+        # Call parser
+        json_data = self.parser.parse_add_measurement_dataframe(dataframe=dataframe, function_tag='add_measurements')
+
+        # json_data = {
+        #         SITE-ID: {
+        #             "2021-06-11 05:00:00": {
+        #                 "gh": 58
+        #             },
+        #             "2021-06-11 05:15:00": {
+        #                 "gh": 219
+        #             },
+        #             "2021-06-11 05:30:00": {
+        #                 "gh": 369
+        #             },
+        #             ...
+        #         },
+        #         SITE-ID: {
+        #             ...
+        #         }
+        # }
+        SITE-ID: {"2021-06-11 05:00:00": {"gh": 58},"2021-06-11 05:15:00": {"gh": 219},"2021-06-11 05:30:00": {"gh": 369}}
+
+        variables = {
+            'action': 'add_measurements',
+            'measurements': json_data
+        }
+        response = self._send_post_request(variables)
+
+        # Parser not needed, because the response is not interesting
+
+        if print_is_requested:
+            print(f"Measurements for site {site_id} has been added.")
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
         """
