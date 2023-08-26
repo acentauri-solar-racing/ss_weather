@@ -4,7 +4,7 @@ import os
 import CONSTANTS as constants
 from scipy.spatial import KDTree
 
-class Route():
+class ApiRoute():
     
     def __init__(self) -> None:
         self.route_data = self._load_route_csv()

@@ -14,7 +14,14 @@ class ApiData():
         self.forecast_sites = pd.DataFrame(columns=self.column_names)
         self.last_save_directory = None
 
+    def _data_restructure(self, dataframe:pd.DataFrame) -> pd.DataFrame:
+        pass
+
     def save_raw_data(self) -> None:
+
+        # CALL FUNCTION THAT SEPARATES THE DATAFRAME IN DIFFERENT DATAFRAMES FOR EACH VARIABLE
+        # SHOULD BE ABLE TO HANDLE CLOUDMOVE AND SOLARFORECAST OUTPUTS
+
         root = tk.Tk()
         root.withdraw()  # Hide the main window
         

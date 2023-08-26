@@ -35,6 +35,10 @@ class ApiParser():
 
         else:
             print(f'Unknown content type from {function_tag}.')
+
+    def parse_add_measurement_dataframe(self, dataframe:pd.DataFrame) -> str:
+        # TODO
+        pass
     
     def parse_site_add_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
         self._check_response(response, function_tag)

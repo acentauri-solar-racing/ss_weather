@@ -20,16 +20,17 @@ class DataPreprocessor():
         pass
 
     def temperature_correction(self):
+        if 8 < time < 20:
         # -2°C. during the night (20:00 - 08:00) +3°C
+        elif 10 < time < 16:
         # during the day (10:00 - 16:00)
+        else:
         # no correction in between.
-        pass
-
-    def irradiances2global(self):
-        pass
 
     def air_density_estimation(self):
-        # https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren
+        """
+        TODO https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren
+        """
         psychrolib.SetUnitSystem(psychrolib.SI)
         atmospheric_pressure = psychrolib.GetStandardAtmPressure(Altitude=altitude) # in Pa
         humidity_ratio = psychrolib.GetHumRatioFromRelHum(TDryBulb=tt, RelHum=rh/100, Pressure=atmospheric_pressure) # in kg_H₂O kg_Air⁻¹ [SI]
