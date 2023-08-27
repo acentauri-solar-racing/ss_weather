@@ -20,8 +20,8 @@ class ApiRoute():
         validation_rules = {
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
-            'number_sites': (int, 1, 3000),
-            'delta_spacing': (float, 1, 3000000) # in meters
+            'number_sites': (int, 2, 150),
+            'delta_spacing': (float, 1, 3026036) # in meters
         }
 
         for variable, value in variables.items():
@@ -55,13 +55,15 @@ class ApiRoute():
         start_index = closest_point.name
         start_distance = self.route_data.iloc[start_index]['cumDistance']
 
-        # Cut data and start the cumulative distance from the new position
+        # Cut data and reset indexing
         cut_data = self.route_data.iloc[start_index:].copy()
-        cut_data['cumDistance'] -= start_distance
-        # Drop old indexing
         cut_data = cut_data.reset_index(drop=True)
+
         # Delete surface type
         cut_data = cut_data.drop('surface', axis=1)
+
+        # Save total cumulative distance
+        cut_data = pd.concat([cut_data, pd.DataFrame({'cumDistanceCut': cut_data['cumDistance'] - start_distance})], axis=1)
 
         if number_sites is None and delta_spacing is None:
             print(cut_data)
@@ -70,7 +72,7 @@ class ApiRoute():
         else:
             add_last_point_is_true: bool = True
             if number_sites is not None:
-                delta_spacing = cut_data['cumDistance'].max() / (number_sites - 1) # correction of first entry
+                delta_spacing = cut_data['cumDistanceCut'].max() / (number_sites - 1) # correction of first entry
                 add_last_point_is_true = False
 
             # Save variables and check
@@ -81,16 +83,16 @@ class ApiRoute():
             self._check_variables(variables)
         
             # Find value of interpolation points
-            number_inter_point = int(cut_data['cumDistance'].max() / delta_spacing)
+            number_inter_point = int(cut_data['cumDistanceCut'].max() / delta_spacing)
             # Define the monotonically-increasing equally-spaced vector
             x = np.arange(number_inter_point + 1) * delta_spacing
 
             # Insert last point
             if add_last_point_is_true:
-                x = np.append(x, cut_data['cumDistance'].max())
+                x = np.append(x, cut_data['cumDistanceCut'].max())
 
             # Interpolation points
-            xp = cut_data['cumDistance']
+            xp = cut_data['cumDistanceCut']
 
             interpolated_data = pd.DataFrame()
             for column in cut_data.columns:
@@ -101,7 +103,7 @@ class ApiRoute():
                     pd_values = pd_values.reset_index(drop=True)
                     interpolated_data = pd.concat([interpolated_data, pd_values], axis=1)
 
-                elif column == 'cumDistance':
+                elif column == 'cumDistanceCut':
                     interpolated_data[column] = x.tolist()
 
                 else:
