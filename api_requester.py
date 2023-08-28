@@ -91,6 +91,24 @@ class ApiRequester():
         """
         self._check_variables(variables)
 
+        # TODO
+
+        url = "https://mdx.meteotest.ch/api_v1"
+
+        payload = {'key': self.KEY,
+        'service': self.SERVICE,
+        'format': self.FORMAT,
+        'action': 'add_measurements',
+        'measurements': '{584990: {"2023-08-27 14:00:00": {"gh": 230},"2023-08-27 14:15:00": {"gh": 220}}}'}
+        files=[
+
+        ]
+        headers = {}
+
+        response = requests.request("POST", url, headers=headers, data=payload, files=files)
+
+        print(response.text)
+
         mdx_url = f'{self.API_WEBSITE}key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
