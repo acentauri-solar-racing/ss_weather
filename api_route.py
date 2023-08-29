@@ -72,7 +72,7 @@ class ApiRoute():
         cut_data = self.route_data.copy()
 
         # Delete surface type to avoid problems with interpolation
-        cut_data = cut_data.drop('surface', axis=1)
+        # cut_data = cut_data.drop('surface', axis=1)
 
         # Add cumulative distance column
         cut_data = pd.concat([cut_data, pd.DataFrame({'cumDistanceCut': cut_data['cumDistance']})], axis=1)

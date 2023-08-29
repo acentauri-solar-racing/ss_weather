@@ -1,4 +1,4 @@
-ROUTE = '..\\ss_offline_data\\route\\route.csv'
+ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
 MAX_SITES_NUMBER = 150
 API_COLUMN_NAMES = ['name', 'site_id', 'longitude', 'latitude', 'altitude']
 FORECAST_PARAMETERS = {
