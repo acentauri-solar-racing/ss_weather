@@ -19,7 +19,7 @@ class ApiRoute():
         TODO
         """
         script_directory = os.path.dirname(os.path.abspath(__file__))
-        csv_file_path = os.path.join(script_directory, constants.ROUTE)
+        csv_file_path = os.path.join(script_directory, constants.ROUTE) # CHANGE THIS TO WINDOW AS GUI
         route_data = pd.read_csv(csv_file_path)
         return route_data
     
@@ -71,8 +71,11 @@ class ApiRoute():
         """
         cut_data = self.route_data.copy()
 
-        # Delete surface type to avoid problems with interpolation
-        # cut_data = cut_data.drop('surface', axis=1)
+        # Delete columns that are not needed
+        cut_data = cut_data.drop('inclination', axis=1)
+        cut_data = cut_data.drop('inclinationSmooth', axis=1)
+        cut_data = cut_data.drop('altitude', axis=1)
+        cut_data = cut_data.drop('distance', axis=1)
 
         # Add cumulative distance column
         cut_data = pd.concat([cut_data, pd.DataFrame({'cumDistanceCut': cut_data['cumDistance']})], axis=1)

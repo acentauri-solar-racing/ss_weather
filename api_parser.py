@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import Tuple
+from datetime import datetime
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -89,28 +90,8 @@ class ApiParser():
 
         data_to_concat = [
             {
-                'site_id': site_id,
-                'time': time,
-                **time_forecast
-            }
-            for site_id, site_forecast in sites_data.items()
-            for time, time_forecast in site_forecast.items()
-        ]
-
-        response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id', 'time'])
-
-        return response_df
-    
-    def parse_solar_forecast_cloudmove_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
-        self._check_response(response, function_tag)
-
-        response_dict = response.json()
-        sites_data = response_dict["payload"]["solarforecast"]
-
-        data_to_concat = [
-            {
-                'site_id': site_id,
-                'time': time,
+                'site_id': int(site_id),
+                'time': datetime.strptime(time, '%Y-%m-%d %H:%M:%S'),
                 **time_forecast
             }
             for site_id, site_forecast in sites_data.items()
