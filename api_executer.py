@@ -40,6 +40,7 @@ class ApiExecuter():
 
             self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
 
+            # TODO BUG LAST ENTRY
         if print_is_requested:
             print(f"Requested sites have been deleted: \n {self.requester.forecast_sites}")
 

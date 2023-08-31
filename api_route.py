@@ -186,5 +186,7 @@ class ApiRoute():
                 interpolated_values = np.interp(x, xp, fp)
                 interpolated_data[column] = interpolated_values.tolist()
         
-        print(interpolated_data)
+        if print_is_requested:
+            print(interpolated_data)
+            
         return interpolated_data

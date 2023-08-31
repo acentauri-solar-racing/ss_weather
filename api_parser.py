@@ -88,6 +88,11 @@ class ApiParser():
         response_dict = response.json()
         sites_data = response_dict["payload"]["solarforecast"]
 
+        # Check if the response is empty
+        if sites_data == []:
+            print(f'Response from {function_tag} is empty.')
+            return pd.DataFrame()
+
         data_to_concat = [
             {
                 'site_id': int(site_id),

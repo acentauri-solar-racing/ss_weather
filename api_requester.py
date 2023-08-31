@@ -278,7 +278,7 @@ class ApiRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, function_tag=variables['action'])
-        # TODO SITE ID CONVERT TO POSITION?s
+        # TODO SITE ID CONVERT TO POSITION?
 
         if print_is_requested:
             print("Solar forecast have been retrieved.")
