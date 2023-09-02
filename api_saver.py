@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import filedialog
 import CONSTANTS as costants
 
-class ApiData():
+class ApiSaver():
     """
     TODO
     """
@@ -15,10 +15,15 @@ class ApiData():
         self.last_save_directory = None
 
     def _data_restructure(self, dataframe:pd.DataFrame) -> pd.DataFrame:
+        """
+        TODO
+        """
         pass
 
     def save_raw_data(self) -> None:
-
+        """
+        TODO
+        """
         # CALL FUNCTION THAT SEPARATES THE DATAFRAME IN DIFFERENT DATAFRAMES FOR EACH VARIABLE
         # SHOULD BE ABLE TO HANDLE CLOUDMOVE AND SOLARFORECAST OUTPUTS
 

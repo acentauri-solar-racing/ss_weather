@@ -14,6 +14,7 @@ class ApiParser():
     def __init__(self) -> None:
         self.column_names = constants.API_COLUMN_NAMES
 
+    # TODO ALL FORMAT ARE JSON NOW, NOT NEEDED ANYMORE
     def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
         """
         Check if the response is valid.
@@ -38,10 +39,16 @@ class ApiParser():
             print(f'Unknown content type from {function_tag}.')
 
     def parse_add_measurement_dataframe(self, dataframe:pd.DataFrame) -> str:
+        """
+        TODO
+        """
         # TODO
         pass
     
     def parse_site_add_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
+        """
+        TODO
+        """
         self._check_response(response, function_tag)
 
         response_dict = response.json()
@@ -59,6 +66,9 @@ class ApiParser():
         return response_df
     
     def parse_site_info_response(self, response:requests.models.Response, function_tag:str) -> Tuple[pd.DataFrame, str]:
+        """
+        TODO
+        """
         self._check_response(response, function_tag)
 
         response_dict = json.loads(response.text)
@@ -83,6 +93,9 @@ class ApiParser():
         return response_df, response_formatted
     
     def parse_solar_forecast_response(self, response: requests.models.Response, function_tag: str) -> pd.DataFrame:
+        """
+        TODO
+        """
         self._check_response(response, function_tag)
 
         response_dict = response.json()

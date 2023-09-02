@@ -15,7 +15,7 @@ class ApiRequester():
     """
         
     API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1?'
-    KEY: str = '6C985B9DF101FF63EB494A0FF420FCA6'
+    KEY: str = '6C985B9DF101FF63EB494A0FF420FCA6' # TODO MOVE THIS KEY TO A SAFER PLACE
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
 
@@ -23,6 +23,9 @@ class ApiRequester():
         self.parser = parser
         self.column_names = costants.API_COLUMN_NAMES
         self.forecast_sites = pd.DataFrame(columns=self.column_names)
+
+        # TODO MODIFY HERE, SO THAT SITE_ID IS THE INDEX AND NOT A COLUMN, REMOVE THE CURRENT INDEX
+        # PROPAGATE THIS CHANGE TO ALL THE OTHER CLASSES
 
         dataframe = self.get_site_info(print_is_requested=False)
 
@@ -128,7 +131,7 @@ class ApiRequester():
         # Check if dataframe has the correct columns
         column_names = ['SITE_ID', 'TIMESTAMP', 'GH']
         if not set(dataframe.columns) == set(column_names):
-            raise ValueError(f"dataframe columns must be {self.column_names}. Received: {dataframe.columns}")
+            raise ValueError(f"dataframe columns must be {column_names}. Received: {dataframe.columns}")
         
         # Call parser
         json_data = self.parser.parse_add_measurement_dataframe(dataframe=dataframe, function_tag='add_measurements')
@@ -193,6 +196,7 @@ class ApiRequester():
         """
         variables = {
             'action': 'siteedit',
+            'format': self.FORMAT,
             'site_id': site_id
         }
         string = ""
@@ -236,6 +240,7 @@ class ApiRequester():
         """
         variables = {
             'action': 'sitedelete',
+            'format': self.FORMAT,
             'site_id': site_id
         }
         self._send_get_request(variables)
@@ -340,4 +345,4 @@ class ApiRequester():
         self.forecast_sites = self.forecast_sites[self.forecast_sites['site_id'] != site_id]
 
         if print_is_requested:
-            print(f"Delete site has been saved: \n {self.forecast_sites}.")
+            print(f"Delete site has been removed: \n {self.forecast_sites}.")

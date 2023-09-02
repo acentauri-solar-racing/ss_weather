@@ -3,6 +3,9 @@ import math
 import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
 
 class ForecastPreprocessor():
+    """
+    TODO
+    """
 
     def __init__(self) -> None:
         self.ROUGHNESS_LENGTH_Z0 = 0.03 # in meters from roughness class 1 (https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh)
@@ -15,6 +18,9 @@ class ForecastPreprocessor():
         self.forecast_preprocessed_df : pd.DataFrame = pd.DataFrame()
 
     def _cut_data(self):
+        """
+        TODO
+        """
         # cut data based on final time
         # create linear time column for algorithms
         # assign useful colum to self.forecast_preprocessed_df to be used in the next steps
@@ -29,6 +35,9 @@ class ForecastPreprocessor():
         self.forecast_preprocessed_df = pd.concat([self.forecast_preprocessed_df, wind_speed_corrected], axis=1)
 
     def _wind_decomposition(self) -> None:
+        """
+        TODO
+        """
         theta = self.route_df['theta'] # in degrees
         wind_direction = self.forecast_df['dd'] # in degrees
         attack_angle = wind_direction - theta # in degrees
@@ -94,4 +103,7 @@ class ForecastPreprocessor():
         return self.forecast_df
     
     def save_data(self):
+        """
+        TODO
+        """
         pass
