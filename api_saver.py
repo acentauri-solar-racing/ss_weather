@@ -2,19 +2,16 @@ import time
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
-import CONSTANTS as costants
 
 class ApiSaver():
     """
     TODO
     """
 
-    def __init__(self, dataframe:pd.DataFrame) -> None:
-        self.column_names = costants.API_COLUMN_NAMES
-        self.forecast_sites = pd.DataFrame(columns=self.column_names)
+    def __init__(self) -> None:
         self.last_save_directory = None
 
-    def _data_restructure(self, dataframe:pd.DataFrame) -> pd.DataFrame:
+    def _data_restructure(self, route_df:pd.DataFrame, ) -> pd.DataFrame:
         """
         TODO
         """

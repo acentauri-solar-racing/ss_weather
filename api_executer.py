@@ -50,7 +50,6 @@ class ApiExecuter():
         TODO
         """
         for site_id in self.requester.forecast_sites.index:
-            print(self.requester.forecast_sites.index)
             self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
         
         if print_is_requested:

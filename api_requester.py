@@ -61,14 +61,10 @@ class ApiRequester():
                 # TODO check post request
 
                 # Check site id
-                # TODO FIND BETTER SEARCH ALGORITHM THAT CHECKS IF THE SITE ID IS PRESENT IN SELF.FORECAST_SITES
-                # if variable == 'site_id':
-                    # response = self.get_site_info(print_is_requested=False)
-                    # response_dict = response.json()
-                    
-                    # sites_id = response_dict["payload"]["solarforecast"]["sites"].keys()
-                    # if str(value) not in set(sites_id):
-                    #     raise ValueError(f'Site ID {value} is not valid.')
+                if variable == 'site_id':
+                    indices = self.forecast_sites.index
+                    if value not in indices:
+                        raise ValueError(f'{variable} has to be one of {indices}. Received: {value}')
             
     def _send_get_request(self, variables:dict) -> requests.models.Response:
         """
@@ -211,7 +207,7 @@ class ApiRequester():
             if isinstance(position, dict) and 'longitude' in position and 'latitude' in position:
                 variables['longitude'] = position['longitude']
                 variables['latitude'] = position['latitude']
-                string += f"New position: {kwargs['position']}. "
+                string += f"New position: Longitude: {position['longitude']}, latitude: {position['latitude']}. "
                 correct_kwargs = True
             else:
                 raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
@@ -234,10 +230,7 @@ class ApiRequester():
             self.forecast_sites.at[site_id, 'latitude'] = position['latitude']
 
         if print_is_requested:
-            print(f"Edit site has been saved: \n {self.forecast_sites}.")
-
-        if print_is_requested:
-            print(f"Site with id {site_id} has been edited: {string}")
+            print(f'Site with id {site_id} has been edited: {string} \n {self.forecast_sites}')
 
     def get_site_delete(self, site_id:int, print_is_requested:bool=True) -> None:
         """
