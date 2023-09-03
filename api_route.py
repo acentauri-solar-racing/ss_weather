@@ -9,19 +9,13 @@ class ApiRoute():
     TODO
     """
     
-    def __init__(self) -> None:
-        self.route_data = self._load_route_csv()
+    def __init__(self, route_data:pd.DataFrame) -> None:
+        # Save complete route data
+        self.route_data = route_data
         self.max_distance = self.route_data['cumDistance'].max()
-        self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
 
-    def _load_route_csv(self) -> pd.DataFrame:
-        """
-        TODO
-        """
-        script_directory = os.path.dirname(os.path.abspath(__file__))
-        csv_file_path = os.path.join(script_directory, constants.ROUTE) # CHANGE THIS TO WINDOW AS GUI
-        route_data = pd.read_csv(csv_file_path)
-        return route_data
+        # Create k-d tree for searching
+        self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
     
     def _check_variables(self, variables:dict) -> None:
         """
@@ -65,7 +59,7 @@ class ApiRoute():
         closest_point = self.route_data.iloc[nearest_point_index]
         return closest_point
 
-    def get_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=True) -> pd.DataFrame:
+    def cut_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=True) -> pd.DataFrame:
         """
         TODO
         """

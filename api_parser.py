@@ -1,6 +1,5 @@
 import pandas as pd
 from typing import Tuple
-from datetime import datetime
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -120,7 +119,7 @@ class ApiParser():
         data_to_concat = [
             {
                 'site_id': int(site_id),
-                'time': datetime.strptime(time, '%Y-%m-%d %H:%M:%S'),
+                'time': pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S'),
                 **time_forecast
             }
             for site_id, site_forecast in sites_data.items()

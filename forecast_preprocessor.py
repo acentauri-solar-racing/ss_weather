@@ -16,6 +16,19 @@ class ForecastPreprocessor():
         self.route_df : pd.DataFrame = pd.DataFrame()
         self.forecast_df : pd.DataFrame = pd.DataFrame()
         self.forecast_preprocessed_df : pd.DataFrame = pd.DataFrame()
+        
+    def _data_cut_time(self, forecast_df:pd.DataFrame, hours_in_advance:int) -> pd.DataFrame:
+        """
+        TODO
+        """
+        # Drop past columns: less than now
+        now = pd.Timestamp.now()
+        forecast_df = forecast_df[forecast_df.index.get_level_values('time') >= now]
+        
+        # Drop future columns: more than x hours
+        forecast_df = forecast_df[forecast_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance)]
+
+        return forecast_df
 
     def _cut_data(self):
         """
