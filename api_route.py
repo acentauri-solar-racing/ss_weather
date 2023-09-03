@@ -65,7 +65,7 @@ class ApiRoute():
         closest_point = self.route_data.iloc[nearest_point_index]
         return closest_point
 
-    def get_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=False) -> pd.DataFrame:
+    def get_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=True) -> pd.DataFrame:
         """
         TODO
         """
@@ -188,5 +188,5 @@ class ApiRoute():
         
         if print_is_requested:
             print(interpolated_data)
-            
+
         return interpolated_data

@@ -19,23 +19,19 @@ class ApiRequester():
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
 
-    def __init__(self, parser:ApiParser) -> None:
+    def __init__(self, parser:ApiParser, print_is_requested:bool=True) -> None:
         self.parser = parser
         self.column_names = costants.API_COLUMN_NAMES
-        self.forecast_sites = pd.DataFrame(columns=self.column_names)
-
-        # TODO MODIFY HERE, SO THAT SITE_ID IS THE INDEX AND NOT A COLUMN, REMOVE THE CURRENT INDEX
-        # PROPAGATE THIS CHANGE TO ALL THE OTHER CLASSES
 
         dataframe = self.get_site_info(print_is_requested=False)
+        self.forecast_sites = pd.DataFrame(dataframe, columns=self.column_names)
 
-        self.forecast_sites = pd.concat([self.forecast_sites, dataframe], ignore_index=True)
-
-        print(f"Current sites' info has been retrieved. \n {self.forecast_sites}")
+        if print_is_requested:
+            print(f"Current sites' info has been retrieved. \n {self.forecast_sites}")
     
     def _check_variables(self, variables:dict) -> None:
         """
-        Check if the variables are valid.
+        Check if the variables are of the correct type and between the ranges.
         """
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
             'site_id': (int, None, None),
@@ -185,10 +181,10 @@ class ApiRequester():
         response_df = self.parser.parse_site_add_response(response, function_tag=variables['action'])
 
         # Add the new site to the forecast_sites DataFrame
-        self._modify_site_add_data(dataframe=response_df, print_is_requested=print_is_requested)
+        self.forecast_sites = pd.concat([self.forecast_sites, response_df])
 
         if print_is_requested:
-            print(f'Site with name {name} has been added in the API.')
+            print(f'Site with name {name} has been added. \n {self.forecast_sites}')
 
     def get_site_edit(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
         """
@@ -229,10 +225,19 @@ class ApiRequester():
         # Parser not needed, because the response is not interesting
         
         # Edit the new site to the forecast_sites DataFrame
-        self._modify_site_edit_data(site_id=site_id, print_is_requested=False, **kwargs)
+        if 'name' in kwargs:
+            self.forecast_sites.at[site_id, 'name'] = kwargs['name']
+
+        if 'position' in kwargs:
+            position = kwargs['position']
+            self.forecast_sites.at[site_id, 'longitude'] = position['longitude']
+            self.forecast_sites.at[site_id, 'latitude'] = position['latitude']
 
         if print_is_requested:
-            print(f"Site with ID {site_id} has been edited: {string}")
+            print(f"Edit site has been saved: \n {self.forecast_sites}.")
+
+        if print_is_requested:
+            print(f"Site with id {site_id} has been edited: {string}")
 
     def get_site_delete(self, site_id:int, print_is_requested:bool=True) -> None:
         """
@@ -248,10 +253,10 @@ class ApiRequester():
         # Parser not needed, because the response is not interesting
 
         # Delete the new site to the forecast_sites DataFrame
-        self._modify_site_delete_data(site_id=site_id, print_is_requested=False)
+        self.forecast_sites.drop(site_id, inplace=True)
 
         if print_is_requested:
-            print(f'Site with id {site_id} has been removed.')
+            print(f'Site with id {site_id} has been removed. \n {self.forecast_sites}')
 
     def get_site_info(self, print_is_requested:bool=True) -> pd.DataFrame:
         """
@@ -306,43 +311,4 @@ class ApiRequester():
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
 
-        return response_pd   
-    
-    def _modify_site_add_data(self, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
-        if not isinstance(dataframe, pd.DataFrame):
-            raise ValueError('dataframe must be a Pandas DataFrame.')
-        
-        # Update the forecast_sites DataFrame
-        self.forecast_sites = pd.concat([self.forecast_sites, dataframe], ignore_index=True)
-
-        if print_is_requested:
-            print(f"Add site has been saved: \n {self.forecast_sites}")
-
-    def _modify_site_edit_data(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
-        """
-        TODO
-        """
-        # Update the forecast_sites DataFrame
-        if 'name' in kwargs:
-            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'name'] = kwargs['name']
-        
-        if 'position' in kwargs:
-            position = kwargs['position']
-            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'longitude'] = position['longitude']
-            self.forecast_sites.loc[self.forecast_sites['site_id'] == site_id, 'latitude'] = position['latitude']
-
-        if print_is_requested:
-            print(f"Edit site has been saved: \n {self.forecast_sites}.")
-
-    def _modify_site_delete_data(self, site_id:int, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
-        # Update the forecast_sites DataFrame
-        self.forecast_sites = self.forecast_sites[self.forecast_sites['site_id'] != site_id]
-
-        if print_is_requested:
-            print(f"Delete site has been removed: \n {self.forecast_sites}.")
+        return response_pd

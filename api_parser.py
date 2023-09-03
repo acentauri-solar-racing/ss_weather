@@ -14,10 +14,9 @@ class ApiParser():
     def __init__(self) -> None:
         self.column_names = constants.API_COLUMN_NAMES
 
-    # TODO ALL FORMAT ARE JSON NOW, NOT NEEDED ANYMORE
     def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
         """
-        Check if the response is valid.
+        Check if the response is valid. Default is JSON.
         """
         content_type = response.headers.get('Content-Type')
 
@@ -52,17 +51,24 @@ class ApiParser():
         self._check_response(response, function_tag)
 
         response_dict = response.json()
+        sites_data = response_dict["payload"]["solarforecast"]["site"]
 
-        # Extract the required information from response_dict
-        name_extracted = response_dict["payload"]["solarforecast"]["site"]["name"]
-        site_id_extracted = response_dict["payload"]["solarforecast"]["site"]["id"]
-        longitude_extracted = response_dict["payload"]["solarforecast"]["site"]["longitude"]
-        latitude_extracted = response_dict["payload"]["solarforecast"]["site"]["latitude"]
-        altitude_extracted = response_dict["payload"]["solarforecast"]["site"]["altitude"]
+        # Check if the response is empty
+        if not sites_data:
+            print(f'Response from {function_tag} is empty.')
+            return pd.DataFrame()
 
-        # Create a new DataFrame with extracted values and assign to corresponding columns
-        response_data = [[name_extracted, site_id_extracted, longitude_extracted, latitude_extracted, altitude_extracted]]
-        response_df = pd.DataFrame(response_data, columns=self.column_names)
+        # Extract the required information from site_data
+        data_to_concat = [{
+            'site_id': int(sites_data["id"]),
+            'name': sites_data["name"],
+            'longitude': sites_data["longitude"],
+            'latitude': sites_data["latitude"],
+            'altitude': sites_data["altitude"]
+        }]
+
+        response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id'])
+
         return response_df
     
     def parse_site_info_response(self, response:requests.models.Response, function_tag:str) -> Tuple[pd.DataFrame, str]:
@@ -71,25 +77,30 @@ class ApiParser():
         """
         self._check_response(response, function_tag)
 
-        response_dict = json.loads(response.text)
-
-        # Extract the required information from response_dict
-        response_formatted = json.dumps(response_dict, indent=2)
-
+        response_dict = response.json()
         sites_data = response_dict["payload"]["solarforecast"]["sites"]
 
-        # Create a new DataFrame with extracted values and assign to corresponding columns
-        response_df = pd.DataFrame(columns=self.column_names)
-        if sites_data != []:
-            for site_id, site_info in sites_data.items():
-                name_extracted = site_info['name']
-                longitude_extracted = site_info['longitude']
-                latitude_extracted = site_info['latitude']
-                altitude_extracted = site_info['altitude']
+        # Format the response for output
+        response_formatted = json.dumps(response_dict, indent=2)
 
-                extracted_values = [[name_extracted, int(site_id), longitude_extracted, latitude_extracted, altitude_extracted]]
-                response_df = pd.concat([response_df, pd.DataFrame(extracted_values, columns=self.column_names)], ignore_index=True)
-        
+        # Check if the response is empty
+        if not sites_data:
+            print(f'Response from {function_tag} is empty.')
+            return pd.DataFrame(), response_formatted
+
+        data_to_concat = [
+            {
+                'site_id': int(site_id),
+                'name': site_info['name'],
+                'longitude': site_info['longitude'],
+                'latitude': site_info['latitude'],
+                'altitude': site_info['altitude']
+            }
+            for site_id, site_info in sites_data.items()
+        ]
+
+        response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id'])
+
         return response_df, response_formatted
     
     def parse_solar_forecast_response(self, response: requests.models.Response, function_tag: str) -> pd.DataFrame:
@@ -102,7 +113,7 @@ class ApiParser():
         sites_data = response_dict["payload"]["solarforecast"]
 
         # Check if the response is empty
-        if sites_data == []:
+        if not sites_data:
             print(f'Response from {function_tag} is empty.')
             return pd.DataFrame()
 

@@ -1,6 +1,6 @@
 ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
 MAX_SITES_NUMBER = 150
-API_COLUMN_NAMES = ['name', 'site_id', 'longitude', 'latitude', 'altitude']
+API_COLUMN_NAMES = ['name', 'longitude', 'latitude', 'altitude']
 FORECAST_PARAMETERS = {
     'tt':   {'unit': '°C',     'description': 'Air Temperature'},
     'gh':   {'unit': 'W/m2',   'description': 'Global radiation on the horizontal plane'},

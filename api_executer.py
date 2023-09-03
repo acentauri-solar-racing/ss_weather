@@ -15,14 +15,16 @@ class ApiExecuter():
         """
         if not isinstance(dataframe, pd.DataFrame):
             raise ValueError('dataframe must be a Pandas DataFrame.')
-
-        for index, row in dataframe.iterrows():
-            name = str(index)
+        # TODO CHECK DATAFRAME STRUCTURE
+        
+        count = 0
+        for _, row in dataframe.iterrows():
+            name = str(count)
             latitude = row['latitude']
             longitude = row['longitude']
-            # TODO CHECK DATAFRAME STRUCTURE
 
             self.requester.get_site_add(name=name, latitude=latitude, longitude=longitude, print_is_requested=print_is_requested)
+            count += 1
 
         if print_is_requested:
             print(f"Requested sites have been added: \n {self.requester.forecast_sites}")
@@ -33,10 +35,10 @@ class ApiExecuter():
         """
         if not isinstance(dataframe, pd.DataFrame):
             raise ValueError('dataframe must be a Pandas DataFrame.')
+        # TODO CHECK DATAFRAME STRUCTURE
 
-        for _, row in dataframe.iterrows():
-            site_id = row['site_id']
-            # TODO CHECK DATAFRAME STRUCTURE
+        for site_id in dataframe.index:
+            self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
 
             self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
 
@@ -47,10 +49,8 @@ class ApiExecuter():
         """
         TODO
         """
-        for _, row in self.requester.forecast_sites.iterrows(): #SICURO CHE MEGLIO COSI E NON CHIMARE INFO? POTREBBERO ESSERE DIVERSI SE USATO POSTMAN
-            # TODO CHECK DATAFRAME STRUCTURE
-
-            site_id = row['site_id']
+        for site_id in self.requester.forecast_sites.index:
+            print(self.requester.forecast_sites.index)
             self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
         
         if print_is_requested:
