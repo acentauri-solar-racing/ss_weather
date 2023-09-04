@@ -10,7 +10,7 @@ class ApiSaver():
     """
 
     def __init__(self) -> None:
-        self.last_save_directory:str = None
+        self.last_save_directory:str = ''
 
     def _data_restructure(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, forecast_df:pd.DataFrame) -> pd.DataFrame:
         """
@@ -45,25 +45,28 @@ class ApiSaver():
         """
         TODO
         """
-
         data_to_save = self._data_restructure(route_df, sites_df, forecast_df)
 
         root = tk.Tk()
         root.withdraw()  # Hide the main window
-        
-        # Remember the last chosen directory
-        initial_dir = getattr(self, 'last_save_directory', '')
+        root.lift()  # Bring the window to the front
+        root.attributes('-topmost', True)  # Keep the window on top of all others
         
         chosen_directory = filedialog.askdirectory(
-            initialdir=initial_dir,
-            title='Select a Folder to Save Forecast Sites'
+            initialdir=self.last_save_directory,
+            title='Select a Folder to Save Forecast Data'
         )
         
         # If a directory is chosen
         if chosen_directory:
-            # Create a new folder named by the current time
+            # Create a new folder named by the current time and forecast product used
             current_time = time.strftime('%Y%m%d_%H%M%S')
-            new_folder_path = os.path.join(chosen_directory, current_time)
+            if len(forecast_df.columns) > 10:
+                product = 'SF'
+            else:
+                product = 'CM'
+            folder_name = f"{current_time}_{product}"
+            new_folder_path = os.path.join(chosen_directory, folder_name)
             os.makedirs(new_folder_path)
             
             # Save each column of data_to_save as a separate CSV
@@ -75,5 +78,9 @@ class ApiSaver():
             
             # Update the last_save_directory attribute
             self.last_save_directory = new_folder_path
+
+            print(f"Data saved to {new_folder_path}.")
+        else:
+            print("No directory chosen. Data not saved.")
         
         return data_to_save
