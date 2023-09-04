@@ -14,73 +14,74 @@ class ForecastPreprocessor():
         self.CORRECTING_FACTOR = math.log(self.WIND_HEIGHT_H2 / self.ROUGHNESS_LENGTH_Z0) / math.log(self.REFERENCE_HEIGHT_H1 / self.ROUGHNESS_LENGTH_Z0)
 
         self.route_df : pd.DataFrame = pd.DataFrame()
-        self.forecast_df : pd.DataFrame = pd.DataFrame()
-        self.forecast_preprocessed_df : pd.DataFrame = pd.DataFrame()
-        
-    def _data_cut_time(self, forecast_df:pd.DataFrame, hours_in_advance:int) -> pd.DataFrame:
+        self.processing_df : pd.DataFrame = pd.DataFrame()
+
+    def _data_cut_time(self, hours_in_advance:int, print_is_requested:bool=False) -> None:
         """
         TODO
         """
         # Drop past columns: less than now
         now = pd.Timestamp.now()
-        forecast_df = forecast_df[forecast_df.index.get_level_values('time') >= now]
+        self.processing_df = self.processing_df[self.processing_df.index.get_level_values('time') >= now]
         
         # Drop future columns: more than x hours
-        forecast_df = forecast_df[forecast_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance)]
+        self.processing_df = self.processing_df[self.processing_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance)]
 
-        return forecast_df
+        if print_is_requested:
+            print(f'Forecast data cut to {hours_in_advance} hours in advance. \n {self.processing_df}')
 
-    def _cut_data(self):
+    def _temperature_correction(self, print_is_requested:bool=False) -> None:
         """
-        TODO
+        Corrections suggested by Pascal Graf from Meteotest.
         """
-        # cut data based on final time
-        # create linear time column for algorithms
-        # assign useful colum to self.forecast_preprocessed_df to be used in the next steps
-        pass
+        # Extract the time values from the multi-index
+        times_hours = self.processing_df.index.get_level_values('time').hour
 
-    def _wind_log_correction(self) -> None:
+        # Apply corrections based on the time
+        mask_night = (times_hours >= 20) | (times_hours <= 8)
+        mask_day = (times_hours >= 10) & (times_hours <= 16)
+
+        # Change column name
+        self.processing_df.rename(columns={'tt': 'temperature'}, inplace=True)
+
+        # Apply the corrections
+        self.processing_df.loc[mask_night, 'temperature'] -= 2 # Subtract 2°C during the night
+        self.processing_df.loc[mask_day, 'temperature'] += 3 # Add 3°C during the day
+        # No correction is applied for the in-between times as they remain unchanged
+
+        if print_is_requested:
+            print(f'Temperature correction applied. \n {self.processing_df}')
+
+    def _wind_log_correction(self, print_is_requested:bool=False) -> None:
         """
         Correct the wind speed forecast at 10 meters to the wind speed at 0.5 meters.
         Equation taken from: https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh
         """
-        wind_speed_corrected = pd.DataFrame(self.forecast_df['ff'] * self.CORRECTING_FACTOR, columns=['windSpeedCorrected']) # in km/h
-        self.forecast_preprocessed_df = pd.concat([self.forecast_preprocessed_df, wind_speed_corrected], axis=1)
+        self.processing_df.rename(columns={'ff': 'windSpeed'}, inplace=True)
+        self.processing_df *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
 
-    def _wind_decomposition(self) -> None:
+        if print_is_requested:
+            print(f'Wind log correction applied. \n {self.processing_df}')
+
+    def _wind_decomposition(self, print_is_requested:bool=False) -> None:
         """
         TODO
         """
+        # Extract relevant angles
         theta = self.route_df['theta'] # in degrees
-        wind_direction = self.forecast_df['dd'] # in degrees
+        wind_direction = self.processing_df['dd'] # in degrees
         attack_angle = wind_direction - theta # in degrees
 
-        wind_speed_side = pd.DataFrame(self.forecast_preprocessed_df['windSpeedCorrected'] * math.sin(math.radians(attack_angle)), columns=['sideWind']) # in km/h
-        wind_speed_front = pd.DataFrame(self.forecast_preprocessed_df['windSpeedCorrected'] * math.cos(math.radians(attack_angle)), columns=['frontWind']) # in km/h
+        # Calculate wind speed components
+        wind_speed_side = pd.DataFrame(self.processing_df['windSpeed'] * math.sin(math.radians(attack_angle)) / 3.6, columns=['sideWind']) # in m/s
+        wind_speed_front = pd.DataFrame(self.processing_df['windSpeed'] * math.cos(math.radians(attack_angle)) / 3.6, columns=['frontWind']) # in m/s
 
-        self.forecast_preprocessed_df = pd.concat([self.forecast_preprocessed_df, wind_speed_side, wind_speed_front], axis=1)
+        self.processing_df = pd.concat([self.processing_df, wind_speed_side, wind_speed_front], axis=1)
 
-    def _temperature_correction(self) -> None:
-        """
-        Correction suggest by Pascal Graf from Meteotest.
-        """
-        # Extract the time values from the multi-index
-        times = self.forecast_df.index.get_level_values('time').hour
+        if print_is_requested:
+            print(f'Wind decomposition applied. \n {self.processing_df}')
 
-        # Apply corrections based on the time
-        mask_night = (times >= 20) | (times <= 8)
-        mask_day = (times >= 10) & (times <= 16)
-
-        # Preallocate the temperature column
-        temperature_corrected = pd.DataFrame(self.forecast_df['tt'], columns=['temperatureCorrected']) # in °C
-        self.forecast_preprocessed_df = pd.concat([self.forecast_preprocessed_df, temperature_corrected], axis=1)
-
-        # Apply the corrections
-        self.forecast_preprocessed_df.loc[mask_night, 'temperatureCorrected'] += 3  # Add 3°C during the night
-        self.forecast_preprocessed_df.loc[mask_day, 'temperatureCorrected'] -= 2    # Subtract 2°C during the day
-        # No correction is applied for the in-between times as they remain unchanged
-
-    def _air_density_estimation(self) -> None:
+    def _air_density_estimation(self, print_is_requested:bool=False) -> None:
         """
         TODO https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren
         """
@@ -91,29 +92,47 @@ class ForecastPreprocessor():
         atmospheric_pressure = psychrolib.GetStandardAtmPressure(Altitude=altitude) # in Pa
 
         # Extract temperature and relative humidity data and calculate humidity ratio
-        air_temperature = self.forecast_df['tt'] # in °C
-        relative_humidity = self.forecast_df['rh'] # in %
+        air_temperature = self.processing_df['temperature'] # in °C
+        relative_humidity = self.processing_df['rh'] # in %
         humidity_ratio = psychrolib.GetHumRatioFromRelHum(TDryBulb=air_temperature, RelHum=relative_humidity/100, Pressure=atmospheric_pressure) # in kg_H₂O kg_Air⁻¹ [SI]
 
         # Calculate air density
         density = psychrolib.GetMoistAirDensity(TDryBulb=air_temperature, HumRatio=humidity_ratio, Pressure=atmospheric_pressure) # in kg m⁻³ [SI]
 
-        self.forecast_preprocessed_df = pd.concat([self.forecast_preprocessed_df, density], axis=1)
+        density_df = pd.DataFrame(density, columns=['airDensity'])
+        self.processing_df = pd.concat([self.processing_df, density_df], axis=1)
 
-    def forecast_preprocessing(self, route_df:pd.DataFrame, forecast_df:pd.DataFrame) -> pd.DataFrame:
+        if print_is_requested:
+            print(f'Air density estimation applied. \n {self.processing_df}')
+
+    def forecast_preprocessing(self, route_df:pd.DataFrame, forecast_df:pd.DataFrame, hours_in_advance:int, print_is_requested:bool=False) -> pd.DataFrame:
         """
         TODO
         """
+        # Save the dataframes
         self.route_df = route_df
-        self.forecast_df = forecast_df
 
-        self._cut_data()
-        self._wind_log_correction()
-        self._wind_decomposition()
-        self._temperature_correction()
-        self._air_density_estimation()
+        # Distinguish between the two forecast products
+        if len(forecast_df.columns) < 10:
+            # CloudMove
+            column_name = ['tt', 'gh']
+            self.processing_df = forecast_df[column_name]
 
-        return self.forecast_df
+            self._data_cut_time(hours_in_advance, print_is_requested=print_is_requested)
+            self._temperature_correction(print_is_requested=print_is_requested)
+
+        else:
+            # SolarForecast
+            column_name = ['tt', 'gh', 'rh', 'ff', 'dd', 'fx']
+            self.processing_df = forecast_df[column_name]
+
+            self._data_cut_time(hours_in_advance, print_is_requested=print_is_requested)
+            self._temperature_correction(print_is_requested=print_is_requested)
+            self._wind_log_correction(print_is_requested=print_is_requested)
+            self._wind_decomposition(print_is_requested=print_is_requested)
+            self._air_density_estimation(print_is_requested=print_is_requested)
+
+        return self.processing_df
     
     def save_data(self):
         """
