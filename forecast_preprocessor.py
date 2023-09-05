@@ -18,8 +18,8 @@ class ForecastPreprocessor():
         self.CORRECTING_FACTOR = np.log(self.WIND_HEIGHT_H2 / self.ROUGHNESS_LENGTH_Z0) / np.log(self.REFERENCE_HEIGHT_H1 / self.ROUGHNESS_LENGTH_Z0)
         self.print_is_requested = print_is_requested
 
-        self.route_df : pd.DataFrame = pd.DataFrame()
-        self.processing_df : pd.DataFrame = pd.DataFrame()
+        self.route_df = pd.DataFrame()
+        self.processing_df = pd.DataFrame()
 
     def _print(self, message:str) -> None:
         if self.print_is_requested:
@@ -36,7 +36,7 @@ class ForecastPreprocessor():
         # Drop future columns: more than x hours
         self.processing_df = self.processing_df[self.processing_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance, minutes=15)]
 
-        self._print(f'Forecast data cut to {hours_in_advance} hours in advance. \n {self.processing_df}')
+        self._print(f'Forecast data cut to {hours_in_advance} hours in advance.')
 
     def _temperature_correction(self) -> None:
         """
@@ -57,66 +57,74 @@ class ForecastPreprocessor():
         self.processing_df.loc[mask_day, 'temperature'] += 3 # Add 3°C during the day
         # No correction is applied for the in-between times as they remain unchanged
 
-        self._print(f'Temperature correction applied. \n {self.processing_df}')
+        self._print(f'Temperature correction applied.')
 
     def _wind_log_correction(self) -> None:
         """
         Correct the wind speed forecast at 10 meters to the wind speed at 0.5 meters.
         Equation taken from: https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh
         """
-        self.processing_df.rename(columns={'ff': 'windSpeed'}, inplace=True)
-        self.processing_df *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
+        self.processing_df.rename(columns={
+            'ff': 'windSpeed',
+            'fx': 'windGust'
+        }, inplace=True)
 
-        self._print(f'Wind log correction applied. \n {self.processing_df}')
+        self.processing_df[['windSpeed', 'windGust']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
+
+        self._print(f'Wind log correction applied.')
 
     def _wind_decomposition(self) -> None:
         """
         TODO
         """
-        # Extract relevant angles
-        wind_direction = self.processing_df['dd'] # in degrees
-        theta = self.route_df.set_index('cumDistance')['theta'] # set cumDistance as the index for theta
-        theta_mapped = wind_direction.index.get_level_values('cumDistance').map(theta) # Map the cumDistance level of wind_direction's index to the values in theta
-        attack_angle = wind_direction - theta_mapped # in degrees
+        self.processing_df.rename(columns={'dd': 'windDirection'}, inplace=True)
         
-        # theta_mapped = self.processing_df.index.get_level_values('cumDistance').map(self.route_df.set_index('cumDistance')['theta'])
-        # attack_angle = self.processing_df['dd'] - theta_mapped
+        # Extract relevant angles (mapping needed to adjust sizes)
+        theta = self.route_df.set_index('cumDistance')['theta'] # set cumDistance as the index for theta
+        theta_mapped = self.processing_df.index.get_level_values('cumDistance').map(theta) # Map the cumDistance level of wind_direction's index to the values in theta
+        attack_angle = self.processing_df['windDirection'] - theta_mapped # in degrees
 
         # Calculate wind speed components
         self.processing_df['sideWind'] = self.processing_df['windSpeed'] * np.sin(np.radians(attack_angle)) / 3.6
         self.processing_df['frontWind'] = self.processing_df['windSpeed'] * np.cos(np.radians(attack_angle)) / 3.6
 
-        self._print(f'Wind decomposition applied. \n {self.processing_df}')
+        self._print(f'Wind decomposition applied.')
 
     def _air_density_estimation(self) -> None:
         """
         TODO https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren
         """
         psychrolib.SetUnitSystem(psychrolib.SI)
-        altitude_mapped = self.processing_df.index.get_level_values('cumDistance').map(self.route_df.set_index('cumDistance')['altitudeSmoothed'])
-        atmospheric_pressure = psychrolib.GetStandardAtmPressure(Altitude=altitude_mapped)
-        humidity_ratio = psychrolib.GetHumRatioFromRelHum(TDryBulb=self.processing_df['temperature'], RelHum=self.processing_df['rh']/100, Pressure=atmospheric_pressure)
-        self.processing_df['airDensity'] = psychrolib.GetMoistAirDensity(TDryBulb=self.processing_df['temperature'], HumRatio=humidity_ratio, Pressure=atmospheric_pressure)
-        self._print(f'Air density estimation applied. \n {self.processing_df}')
 
+        # Extract altitude data and calculate atmospheric pressure
+        altitude = self.route_df.set_index('cumDistance')['altitudeSmoothed'] # set cumDistance as the index for altitude (in meters)
+        pressure = altitude.apply(psychrolib.GetStandardAtmPressure) # in Pa
+        self.processing_df['pressure'] = self.processing_df.index.get_level_values('cumDistance').map(pressure) # Map the cumDistance level of pressure's index to the values in pressure
 
-        # # Extract altitude data and calculate atmospheric pressure
-        # altitude = self.route_df['altitudeSmoothed'] # in meters
-        # altitude_mapped = self.processing_df.index.get_level_values('cumDistance').map(altitude)
-        # atmospheric_pressure = psychrolib.GetStandardAtmPressure(Altitude=altitude_mapped) # in Pa
+        # Calculate humidity ratio
+        self.processing_df['humidity_ratio'] = self.processing_df.apply( # in kg_H₂O kg_Air⁻¹ [SI]
+            lambda row: psychrolib.GetHumRatioFromRelHum(
+                TDryBulb=row['temperature'], # in °C
+                RelHum=row['rh']/100, # in %
+                Pressure=row['pressure'] # in Pa
+            ), 
+            axis=1
+        )
 
-        # # Extract temperature and relative humidity data and calculate humidity ratio
-        # air_temperature = self.processing_df['temperature'] # in °C
-        # relative_humidity = self.processing_df['rh'] # in %
-        # humidity_ratio = psychrolib.GetHumRatioFromRelHum(TDryBulb=air_temperature, RelHum=relative_humidity/100, Pressure=atmospheric_pressure) # in kg_H₂O kg_Air⁻¹ [SI]
+        # Calculate air density
+        self.processing_df['airDensity'] = self.processing_df.apply(
+            lambda row: psychrolib.GetMoistAirDensity(
+                TDryBulb=row['temperature'], # in °C
+                HumRatio=row['humidity_ratio'], # in kg_H₂O kg_Air⁻¹ [SI]
+                Pressure=row['pressure'] # in Pa
+            ), 
+            axis=1
+        )
 
-        # # Calculate air density
-        # density = psychrolib.GetMoistAirDensity(TDryBulb=air_temperature, HumRatio=humidity_ratio, Pressure=atmospheric_pressure) # in kg m⁻³ [SI]
+        # Drop unnecessary columns
+        self.processing_df.drop(columns=['rh', 'pressure', 'humidity_ratio'], inplace=True)
 
-        # density_df = pd.DataFrame(density, columns=['airDensity'])
-        # self.processing_df = pd.concat([self.processing_df, density_df], axis=1)
-
-        # self._print(f'Air density estimation applied. \n {self.processing_df}')
+        self._print(f'Air density estimation applied.')
 
     def forecast_preprocessing(self, route_df:pd.DataFrame, forecast_df:pd.DataFrame, hours_in_advance:int, print_is_requested:bool=False) -> pd.DataFrame:
         """
@@ -146,7 +154,10 @@ class ForecastPreprocessor():
             self._temperature_correction()
             self._wind_log_correction()
             self._wind_decomposition()
-            # self._air_density_estimation()
+            self._air_density_estimation()
+
+        # Rename global irradiance column
+        self.processing_df.rename(columns={'gh': 'globalIrradiance'}, inplace=True) # in W m⁻²
 
         return self.processing_df
     
