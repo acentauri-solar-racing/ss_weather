@@ -35,7 +35,7 @@ class Forecast(Base):
 
 class CarParams(Base):
     __tablename__ = "car_params"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    time: Mapped[int] = mapped_column(primary_key=True)
     cd: Mapped[float] = mapped_column(Float())
     cr: Mapped[float] = mapped_column(Float())
 
@@ -46,7 +46,7 @@ class CarParams(Base):
     def __repr__(self) -> str:
         return "%s(id=%s), (%s, %s, %s)" % (
             "forecasts",
-            self.id,
+            self.time,
             self.cd,
             self.cr,
         )
