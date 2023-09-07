@@ -10,7 +10,7 @@ Base = declarative_base()
 # can adapt the entries by adding or removing lines
 class Forecast(Base):
     __tablename__ = "forecasts"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True) # numbers
     gk: Mapped[float] = mapped_column(Float())
     gh_max: Mapped[float] = mapped_column(Float())
     tt: Mapped[float] = mapped_column(Float())
