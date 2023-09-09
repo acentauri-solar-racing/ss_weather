@@ -24,7 +24,8 @@ class DbService:
         self.session: Session = self.create_session()
 
     def conn_string(self) -> str:
-        env = dotenv_values("db/.env")
+        env = dotenv_values(".env")
+        print(env)
 
         return "mysql+pymysql://%s:%s@%s/%s" % (
             env["DB_USER"],
