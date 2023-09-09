@@ -3,3 +3,9 @@ PyMySQL
 SQLAlchemy
 python-dotenv
 psychrolib
+numpy
+requests
+bs4
+scipy
+tkinter
+geocoder
