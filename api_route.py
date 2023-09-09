@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-import os
-import CONSTANTS as constants
+import constants
 from scipy.spatial import KDTree
 
 class ApiRoute():

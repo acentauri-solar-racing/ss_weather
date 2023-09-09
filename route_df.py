@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-import CONSTANTS as constants
+import constants
 
 class RouteDF():
     """

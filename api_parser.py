@@ -3,7 +3,7 @@ from typing import Tuple
 import requests
 import json
 from bs4 import BeautifulSoup
-import CONSTANTS as constants
+import constants
 
 class ApiParser():
     """

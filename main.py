@@ -6,7 +6,7 @@ from api_requester import ApiRequester
 from api_parser import ApiParser
 from api_executer import ApiExecuter
 # from api_data import ApiData
-from FUNCTIONS import get_current_location
+from functions import get_current_location
 
 current_position = {'longitude': 130.868566,
                     'latitude': -12.432466}

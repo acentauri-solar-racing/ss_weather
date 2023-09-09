@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-import CONSTANTS as costants
+import constants
 from api_parser import ApiParser
 
 class ApiRequester():
@@ -21,7 +21,7 @@ class ApiRequester():
 
     def __init__(self, parser:ApiParser, print_is_requested:bool=True) -> None:
         self.parser = parser
-        self.column_names = costants.API_COLUMN_NAMES
+        self.column_names = constants.API_COLUMN_NAMES
 
         dataframe = self.get_site_info(print_is_requested=False)
         self.forecast_sites = pd.DataFrame(dataframe, columns=self.column_names)
