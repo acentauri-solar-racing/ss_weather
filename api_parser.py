@@ -3,7 +3,6 @@ from typing import Tuple
 import requests
 import json
 from bs4 import BeautifulSoup
-import constants
 
 class ApiParser():
     """
@@ -11,7 +10,7 @@ class ApiParser():
     """
 
     def __init__(self) -> None:
-        self.column_names = constants.API_COLUMN_NAMES
+        pass
 
     def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
         """
@@ -35,6 +34,16 @@ class ApiParser():
 
         else:
             print(f'Unknown content type from {function_tag}.')
+
+    def _convert_to_timedelta(self, utc_string:str) -> pd.Timedelta:
+        # Remove the "UTC+" part
+        offset_str = utc_string.replace("UTC+", "")
+        
+        # Convert to timedelta
+        utc_delta = pd.Timedelta(hours=float(offset_str))
+        # utc_delta = float(offset_str)
+
+        return utc_delta
 
     def parse_add_measurement_dataframe(self, dataframe:pd.DataFrame) -> str:
         """
@@ -63,7 +72,8 @@ class ApiParser():
             'name': sites_data["name"],
             'longitude': sites_data["longitude"],
             'latitude': sites_data["latitude"],
-            'altitude': sites_data["altitude"]
+            'altitude': sites_data["altitude"],
+            'UTC_offset': self._convert_to_timedelta(sites_data["utc_offset"])
         }]
 
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id'])
@@ -87,13 +97,14 @@ class ApiParser():
             print(f'Response from {function_tag} is empty.')
             return pd.DataFrame(), response_formatted
 
-        data_to_concat = [
+        data_to_concat = [ # TODO UNIRE CON QUELLA DELLA INFO PER EVITARE ERRORI
             {
                 'site_id': int(site_id),
                 'name': site_info['name'],
                 'longitude': site_info['longitude'],
                 'latitude': site_info['latitude'],
-                'altitude': site_info['altitude']
+                'altitude': site_info['altitude'],
+                'UTC_offset': self._convert_to_timedelta(site_info['utc_offset'])
             }
             for site_id, site_info in sites_data.items()
         ]
@@ -102,7 +113,7 @@ class ApiParser():
 
         return response_df, response_formatted
     
-    def parse_solar_forecast_response(self, response: requests.models.Response, function_tag: str) -> pd.DataFrame:
+    def parse_solar_forecast_response(self, response:requests.models.Response, forecast_sites:pd.DataFrame, function_tag:str) -> pd.DataFrame:
         """
         TODO
         """
@@ -119,7 +130,7 @@ class ApiParser():
         data_to_concat = [
             {
                 'site_id': int(site_id),
-                'time': pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S'),
+                'time': pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S') + forecast_sites.loc[int(site_id), 'UTC_offset'],
                 **time_forecast
             }
             for site_id, site_forecast in sites_data.items()

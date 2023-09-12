@@ -15,16 +15,15 @@ class ApiRequester():
     """
         
     API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1?'
-    KEY: str = '6C985B9DF101FF63EB494A0FF420FCA6' # TODO MOVE THIS KEY TO A SAFER PLACE
+    KEY: str = constants.KEY
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
 
     def __init__(self, parser:ApiParser, print_is_requested:bool=True) -> None:
         self.parser = parser
-        self.column_names = constants.API_COLUMN_NAMES
 
         dataframe = self.get_site_info(print_is_requested=False)
-        self.forecast_sites = pd.DataFrame(dataframe, columns=self.column_names)
+        self.forecast_sites = dataframe
 
         if print_is_requested:
             print(f"Current sites' info has been retrieved. \n {self.forecast_sites}")
@@ -280,7 +279,7 @@ class ApiRequester():
         response = self._send_get_request(variables)
         
         # Parse the response
-        response_df = self.parser.parse_solar_forecast_response(response, function_tag=variables['action'])
+        response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
         # TODO SITE ID CONVERT TO POSITION?
 
         if print_is_requested:
@@ -299,7 +298,7 @@ class ApiRequester():
         response = self._send_get_request(variables)
 
         # Parse the response
-        response_pd = self.parser.parse_solar_forecast_response(response, function_tag=variables['action'])
+        response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
 
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
