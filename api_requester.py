@@ -4,15 +4,13 @@ import constants
 from api_parser import ApiParser
 
 class ApiRequester():
-    """
-    Class for interacting with the weather forecast API from Meteotest.
+    """ Class for interacting with the weather forecast API from Meteotest.
 
     Attributes:
         api_website (str): The base API URL.
         key (str): The API key for authentication.
         service (str): The service to be used.
-        format (str): The response format (default: 'json').
-    """
+        format (str): The response format (default: 'json'). """
         
     API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1?'
     KEY: str = constants.KEY
@@ -29,9 +27,11 @@ class ApiRequester():
             print(f"Current sites' info has been retrieved. \n {self.forecast_sites}")
     
     def _check_variables(self, variables:dict) -> None:
-        """
-        Check if the variables are of the correct type and between the ranges.
-        """
+        """ Check if the variables are of the correct type and between the ranges. 
+        
+            Inputs:
+                variables (dict): The variables to be checked. """
+
         validation_rules = { # horizon, hddctin, hddctout, and cddctout are not included
             'site_id': (int, None, None),
             'name': (str, None, None),
@@ -66,9 +66,11 @@ class ApiRequester():
                         raise ValueError(f'{variable} has to be one of {indices}. Received: {value}')
             
     def _send_get_request(self, variables:dict) -> requests.models.Response:
-        """
-        Format the URL and send a GET request.
-        """
+        """ Format the URL and send a GET request to the API. 
+        
+        Inputs:
+            variables (dict): The variables to be sent to the API. """
+
         self._check_variables(variables)
 
         mdx_url = f'{self.API_WEBSITE}key={self.KEY}&service={self.SERVICE}'
@@ -80,9 +82,8 @@ class ApiRequester():
         return response
     
     def _send_post_request(self, variables:dict) -> requests.models.Response:
-        """
-        Format the URL and send a POST request.
-        """
+        """ Format the URL and send a POST request. """
+
         self._check_variables(variables)
 
         # TODO
@@ -158,9 +159,16 @@ class ApiRequester():
             print(f"Measurements for site {site_id} has been added.")
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
-        """
-        Call the API to add a new site.
-        """
+        """ Call the API to add a new site given the inputs. 
+        
+            Inputs:
+                name (str): The name of the site.
+                latitude (float): The latitude of the site.
+                longitude (float): The longitude of the site.
+                azimuth (int): The azimuth of the site (default: 0).
+                inclination (int): The inclination of the site (default: 0).
+                print_is_requested (bool): Whether to print the result (default: True)."""
+
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
             'action': 'siteadd',
             'format': self.FORMAT,
@@ -182,9 +190,12 @@ class ApiRequester():
             print(f'Site with name {name} has been added. \n {self.forecast_sites}')
 
     def get_site_edit(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
-        """
-        Edit name or position (longitude and latitude)
-        """
+        """ Edit name or position (longitude and latitude).
+        
+            Inputs:
+                site_id (int): The id of the site to be edited.
+                print_is_requested (bool): Whether to print the result (default: True)."""
+        
         variables = {
             'action': 'siteedit',
             'format': self.FORMAT,
@@ -232,9 +243,12 @@ class ApiRequester():
             print(f'Site with id {site_id} has been edited: {string} \n {self.forecast_sites}')
 
     def get_site_delete(self, site_id:int, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
+        """ Call the API to delete a site given the id.
+
+            Inputs:
+                site_id (int): The id of the site to be deleted.
+                print_is_requested (bool): Whether to print the result (default: True). """
+        
         variables = {
             'action': 'sitedelete',
             'format': self.FORMAT,
@@ -251,9 +265,11 @@ class ApiRequester():
             print(f'Site with id {site_id} has been removed. \n {self.forecast_sites}')
 
     def get_site_info(self, print_is_requested:bool=True) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Call the API to get the information of all sites.
+
+            Inputs:
+                print_is_requested (bool): Whether to print the result (default: True). """
+        
         variables = {
             'action': 'siteinfo',
             'format': self.FORMAT
@@ -269,9 +285,11 @@ class ApiRequester():
         return response_df
 
     def get_solar_forecast(self, print_is_requested:bool=True) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Call the API to get the solar forecast for the next 72 hours.
+
+            Inputs:
+                print_is_requested (bool): Whether to print the result (default: True). """
+        
         variables = {
             'action': 'getforecast',
             'format': self.FORMAT
@@ -280,7 +298,6 @@ class ApiRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        # TODO SITE ID CONVERT TO POSITION?
 
         if print_is_requested:
             print("Solar forecast have been retrieved.")
@@ -288,9 +305,11 @@ class ApiRequester():
         return response_df
 
     def get_solar_forecast_cloudmove(self, print_is_requested:bool=True) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Call the API to get the CloudMove forecast for the next 6 hours.
+
+            Inputs:
+                print_is_requested (bool): Whether to print the result (default: True). """
+        
         variables = {
             'action': 'getforecast_cloudmove',
             'format': self.FORMAT

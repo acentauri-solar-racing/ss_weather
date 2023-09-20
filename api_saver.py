@@ -5,17 +5,22 @@ import tkinter as tk
 from tkinter import filedialog
 
 class ApiSaver():
-    """
-    TODO
-    """
+    """ Class for saving the forecast data to CSV files.
+    
+    Attributes:
+        last_save_directory (str): The last directory where the data was saved. """
 
     def __init__(self) -> None:
         self.last_save_directory:str = ''
 
     def _data_restructure(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, forecast_df:pd.DataFrame) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Restructure the forecast data to have cumDistance as the index and time as the columns.
+        
+            Inputs:
+                route_df (pd.DataFrame): The route dataframe with cumDistance and time columns.
+                sites_df (pd.DataFrame): The sites dataframe with name and site_id columns.
+                forecast_df (pd.DataFrame): The forecast dataframe with site_id and time columns. """
+        
         # Given a site_id from forecast_df, find the corresponding name from sites_df, find the cumDistance from route_df
         index_forecast = forecast_df.index.get_level_values('site_id').unique()
         index_sites = sites_df.index
@@ -42,9 +47,13 @@ class ApiSaver():
         return merged_df
 
     def save_raw_data(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, forecast_df:pd.DataFrame) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Save the raw forecast data to CSV files.
+        
+            Inputs:
+                route_df (pd.DataFrame): The route dataframe with cumDistance and time columns.
+                sites_df (pd.DataFrame): The sites dataframe with name and site_id columns.
+                forecast_df (pd.DataFrame): The forecast dataframe with site_id and time columns. """
+        
         data_to_save = self._data_restructure(route_df, sites_df, forecast_df)
 
         root = tk.Tk()

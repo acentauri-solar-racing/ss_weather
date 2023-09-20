@@ -5,17 +5,18 @@ import json
 from bs4 import BeautifulSoup
 
 class ApiParser():
-    """
-    Class for parsing the API responses.
-    """
+    """ Class for parsing the API responses. """
 
     def __init__(self) -> None:
         pass
 
     def _check_response(self, response:requests.models.Response, function_tag:str) -> None:
-        """
-        Check if the response is valid. Default is JSON.
-        """
+        """ Check if the response is valid. Default response type is JSON.
+        
+            Inputs:
+                response (requests.models.Response): The response object.
+                function_tag (str): The name of the function that called this method. """
+
         content_type = response.headers.get('Content-Type')
 
         if 'application/json' in content_type:
@@ -36,12 +37,10 @@ class ApiParser():
             print(f'Unknown content type from {function_tag}.')
 
     def _convert_to_timedelta(self, utc_string:str) -> pd.Timedelta:
-        # Remove the "UTC+" part
+        """ Convert a UTC offset string to a Timedelta object. """
+
         offset_str = utc_string.replace("UTC+", "")
-        
-        # Convert to timedelta
         utc_delta = pd.Timedelta(hours=float(offset_str))
-        # utc_delta = float(offset_str)
 
         return utc_delta
 
@@ -53,9 +52,12 @@ class ApiParser():
         pass
     
     def parse_site_add_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Parse the response from the site_add function.
+        
+            Inputs:
+                response (requests.models.Response): The response object.
+                function_tag (str): The name of the function that called this method. """
+        
         self._check_response(response, function_tag)
 
         response_dict = response.json()
@@ -81,9 +83,12 @@ class ApiParser():
         return response_df
     
     def parse_site_info_response(self, response:requests.models.Response, function_tag:str) -> Tuple[pd.DataFrame, str]:
-        """
-        TODO
-        """
+        """ Parse the response from the site_info function.
+        
+            Inputs:
+                response (requests.models.Response): The response object.
+                function_tag (str): The name of the function that called this method. """
+        
         self._check_response(response, function_tag)
 
         response_dict = response.json()
@@ -114,9 +119,13 @@ class ApiParser():
         return response_df, response_formatted
     
     def parse_solar_forecast_response(self, response:requests.models.Response, forecast_sites:pd.DataFrame, function_tag:str) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Parse the response from the solar_forecast and _cloudmove functions.
+        
+            Inputs:
+                response (requests.models.Response): The response object.
+                forecast_sites (pd.DataFrame): The dataframe with the forecast sites information.
+                function_tag (str): The name of the function that called this method. """
+        
         self._check_response(response, function_tag)
 
         response_dict = response.json()

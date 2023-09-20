@@ -4,9 +4,12 @@ import constants
 from scipy.spatial import KDTree
 
 class ApiRoute():
-    """
-    TODO
-    """
+    """ Class for interacting with the route data obtained from Brouter.
+
+    Attributes:
+        route_data (pd.DataFrame): The route dataframe with latitude, longitude, and cumDistance columns. 
+        max_distance (float): The maximum distance of the route.
+        kdtree (scipy.spatial.KDTree): The k-d tree for searching. """
     
     def __init__(self, route_data:pd.DataFrame) -> None:
         # Save complete route data
@@ -17,9 +20,11 @@ class ApiRoute():
         self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
     
     def _check_variables(self, variables:dict) -> None:
-        """
-        TODO
-        """
+        """ Check if the variables are of the correct type and between the ranges. 
+        
+            Inputs:
+                variables (dict): The variables to be checked. """
+
         validation_rules = {
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
@@ -42,9 +47,12 @@ class ApiRoute():
                 raise ValueError(f'Wrong variable. Received: {variable}')
     
     def find_closest_point(self, position:dict, print_is_requested:bool=True) -> pd.Series:
-        """
-        TODO
-        """
+        """ Find the closest point in the route to the given position.
+
+            Inputs:
+                position (dict): The position with latitude and longitude keys.
+                print_is_requested (bool): Whether to print the nearest point index. """
+        
         self._check_variables(position)
 
         actual_coords = (position['latitude'], position['longitude'])
@@ -59,9 +67,15 @@ class ApiRoute():
         return closest_point
 
     def cut_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=True) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Cut the route data given the current position, final position, number of sites, and delta spacing.
+        
+            Inputs:
+                current_position (dict): The current position with latitude and longitude keys.
+                final_position (dict): The final position with latitude and longitude keys.
+                number_sites (int): The number of sites to be generated.
+                delta_spacing (float): The spacing between sites in meters.
+                print_is_requested (bool): Whether to print the cut data. """
+        
         cut_data = self.route_data.copy()
 
         # Delete columns that are not needed

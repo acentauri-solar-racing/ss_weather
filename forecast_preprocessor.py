@@ -7,9 +7,12 @@ from tkinter import filedialog
 import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
 
 class ForecastPreprocessor():
-    """
-    TODO
-    """
+    """ Class for preprocessing the forecast data and making them ready for Dynamic Programming and Model Predictive Control.
+    
+    Attributes:
+        print_is_requested (bool): Whether to print the preprocessing steps.
+        route_df (pd.DataFrame): The route dataframe with cumDistance and time columns.
+        processing_df (pd.DataFrame): The forecast dataframe with cumDistance and time columns. """
 
     def __init__(self, print_is_requested:bool=False) -> None:
         self.ROUGHNESS_LENGTH_Z0 = 0.03 # in meters from roughness class 1 (https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh)
@@ -22,13 +25,17 @@ class ForecastPreprocessor():
         self.processing_df = pd.DataFrame()
 
     def _print(self, message:str) -> None:
+        """ Print the message if print_is_requested is True. """
+
         if self.print_is_requested:
             print(message)
 
     def _data_cut_time(self, hours_in_advance:int) -> None:
-        """
-        TODO
-        """
+        """ Cut the forecast data to the specified hours in advance.
+        
+            Inputs:
+                hours_in_advance (int): The number of hours in advance to keep. """
+        
         # Drop past columns: less than now less 15 min to keep last row
         now = pd.Timestamp.now()
         self.processing_df = self.processing_df[self.processing_df.index.get_level_values('time') >= now - pd.Timedelta(minutes=15)]
@@ -39,9 +46,8 @@ class ForecastPreprocessor():
         self._print(f'Forecast data cut to {hours_in_advance} hours in advance.')
 
     def _temperature_correction(self) -> None:
-        """
-        Corrections suggested by Pascal Graf from Meteotest.
-        """
+        """ Correct the temperature forecast with the corrections suggested by Pascal Graf from Meteotest. """
+
         # Extract the time values from the multi-index
         times_hours = self.processing_df.index.get_level_values('time').hour
 
@@ -60,8 +66,7 @@ class ForecastPreprocessor():
         self._print(f'Temperature correction applied.')
 
     def _wind_log_correction(self) -> None:
-        """
-        Correct the wind speed forecast at 10 meters to the wind speed at 0.5 meters.
+        """ Correct the wind speed and gust forecast at 10 meters to the wind speed at 0.5 meters.
         Equation taken from: https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh
         """
         self.processing_df.rename(columns={
@@ -74,9 +79,8 @@ class ForecastPreprocessor():
         self._print(f'Wind log correction applied.')
 
     def _wind_decomposition(self) -> None:
-        """
-        TODO
-        """
+        """ Decompose the wind forecast at 0.5 meters to side and front wind. """
+
         self.processing_df.rename(columns={'dd': 'windDirection'}, inplace=True)
         
         # Extract relevant angles (mapping needed to adjust sizes)
@@ -91,9 +95,7 @@ class ForecastPreprocessor():
         self._print(f'Wind decomposition applied.')
 
     def _air_density_estimation(self) -> None:
-        """
-        TODO https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren
-        """
+        """ Estimate the air density from the altitude, temperature and relative humidity. https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren """
         psychrolib.SetUnitSystem(psychrolib.SI)
 
         # Extract altitude data and calculate atmospheric pressure
@@ -127,9 +129,14 @@ class ForecastPreprocessor():
         self._print(f'Air density estimation applied.')
 
     def forecast_preprocessing(self, route_df:pd.DataFrame, forecast_df:pd.DataFrame, hours_in_advance:int, print_is_requested:bool=False) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Preprocess the forecast data and make them ready for Dynamic Programming and Model Predictive Control.
+        
+            Inputs:
+                route_df (pd.DataFrame): The route dataframe with cumDistance and time columns.
+                forecast_df (pd.DataFrame): The forecast dataframe with site_id and time columns.
+                hours_in_advance (int): The number of hours in advance to keep.
+                print_is_requested (bool): Whether to print the preprocessing steps. """
+        
         if not isinstance(route_df, pd.DataFrame) or not isinstance(forecast_df, pd.DataFrame):
             raise ValueError("Input data should be of type pandas DataFrame")
         
@@ -162,9 +169,13 @@ class ForecastPreprocessor():
         return self.processing_df
     
     def save_data(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, forecast_df:pd.DataFrame) -> pd.DataFrame:
-        """
-        TODO
-        """
+        """ Save the forecast data to CSV files.
+        
+            Inputs:
+                route_df (pd.DataFrame): The route dataframe with cumDistance and time columns.
+                sites_df (pd.DataFrame): The sites dataframe with name and site_id columns.
+                forecast_df (pd.DataFrame): The forecast dataframe with site_id and time columns. """
+        
         data_to_save = self._data_restructure(route_df, sites_df, forecast_df)
 
         root = tk.Tk()

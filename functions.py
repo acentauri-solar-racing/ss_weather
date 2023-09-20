@@ -1,9 +1,8 @@
 import geocoder
 
 def get_current_location() -> tuple:
-    """
-    Get current location using geocoder.
-    """
+    """ Get current location using geocoder. """
+
     g = geocoder.ip('me')  # 'me' corresponds to your current IP address
     if g.latlng:
         latitude, longitude = g.latlng
@@ -14,9 +13,7 @@ def get_current_location() -> tuple:
 # from geopy.geocoders import Nominatim
 
 # def get_current_location():
-#     """
-#     Get current location using geopy.
-#     """
+#     """ Get current location using geopy. """
 #     # Initialize a geocoder with Nominatim (OpenStreetMap) provider
 #     geolocator = Nominatim(user_agent="my_geocoder")
 
