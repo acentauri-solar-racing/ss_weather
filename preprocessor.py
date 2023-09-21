@@ -238,7 +238,6 @@ class Preprocessor():
             folder_name = f"{current_time}_{product}"
             new_folder_path = os.path.join(chosen_directory, folder_name)
             os.makedirs(new_folder_path)
-            # os.chdir(new_folder_path) # Change the working directory to the new folder
             self.last_save_directory = new_folder_path # Update the last_save_directory attribute
 
             # Create a subfolder for the raw forecast data
