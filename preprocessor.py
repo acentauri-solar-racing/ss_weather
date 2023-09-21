@@ -21,7 +21,9 @@ class Preprocessor():
         self.REFERENCE_HEIGHT_H1 = 10.0 # in meters
         self.WIND_HEIGHT_H2 = 0.5 # in meters
         self.CORRECTING_FACTOR = np.log(self.WIND_HEIGHT_H2 / self.ROUGHNESS_LENGTH_Z0) / np.log(self.REFERENCE_HEIGHT_H1 / self.ROUGHNESS_LENGTH_Z0)
+        
         self.print_is_requested = print_is_requested
+        self.last_save_directory:str = ''
 
         self.route_df = pd.DataFrame()
         self.sites_df = pd.DataFrame()
@@ -181,7 +183,6 @@ class Preprocessor():
 
         # Restructure the raw forecast data
         self.forecast_df = self._data_restructure(raw_forecast_df)
-        forecast_to_return = self.forecast_df.copy()
 
         # Restructure and correct the data for Dynamic Programming and Model Predictive Control
         # Distinguish between the two forecast products
@@ -207,7 +208,7 @@ class Preprocessor():
         # Rename global irradiance column
         self.preprocess_df.rename(columns={'gh': 'globalIrradiance'}, inplace=True) # in W m⁻²
 
-        return forecast_to_return, self.preprocess_df
+        return self.forecast_df, self.preprocess_df
     
     def save_data(self) -> None:
         """ Save the raw forecast data and the preprocessed data to CSV files. """
@@ -226,23 +227,42 @@ class Preprocessor():
         if chosen_directory:
             # Create a new folder named by the current time and forecast product used
             current_time = time.strftime('%Y%m%d_%H%M%S')
-            if len(df_to_save.columns) > 10:
+
+            # Distinguish between the two forecast products
+            if len(self.forecast_df.columns) > 10:
                 product = 'SF'
             else:
                 product = 'CM'
+
+            # Create the new folder
             folder_name = f"{current_time}_{product}"
             new_folder_path = os.path.join(chosen_directory, folder_name)
             os.makedirs(new_folder_path)
+            # os.chdir(new_folder_path) # Change the working directory to the new folder
+            self.last_save_directory = new_folder_path # Update the last_save_directory attribute
+
+            # Create a subfolder for the raw forecast data
+            forecast_folder_path = os.path.join(new_folder_path, 'raw')
+            os.makedirs(forecast_folder_path)
+
+            # Save each column of data_to_save as a separate CSV
+            for column in self.forecast_df.columns:
+                column_data = self.forecast_df[column].unstack(level=0)
+                file_name = f"{column}.csv"
+                file_path = os.path.join(forecast_folder_path, file_name)
+                column_data.to_csv(file_path)
+
+
+            # Create a subfolder for the preprocessed data
+            preprocess_folder_path = os.path.join(new_folder_path, 'preprocess')
+            os.makedirs(preprocess_folder_path)
             
             # Save each column of data_to_save as a separate CSV
-            for column in df_to_save.columns:
-                column_data = df_to_save[column].unstack(level=0)
+            for column in self.forecast_df.columns:
+                column_data = self.forecast_df[column].unstack(level=0)
                 file_name = f"{column}.csv"
-                file_path = os.path.join(new_folder_path, file_name)
+                file_path = os.path.join(preprocess_folder_path, file_name)
                 column_data.to_csv(file_path)
-            
-            # Update the last_save_directory attribute
-            self.last_save_directory = new_folder_path
 
             print(f"Data saved to {new_folder_path}.")
         else:
