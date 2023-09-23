@@ -97,12 +97,13 @@ class ApiRequester():
             for site_id, group in gh_df.groupby(level='site_id')
         }
 
-        variables = {'key': self.KEY,
-        'service': self.SERVICE,
-        'format': self.FORMAT,
-        'action': 'add_measurements',
-        'measurements': str(gh_dict)}
-
+        variables = {
+            'key': self.KEY,
+            'service': self.SERVICE,
+            'format': self.FORMAT,
+            'action': 'add_measurements',
+            'measurements': str(gh_dict)
+        }
         self._send_post_request(variables)
 
         if print_is_requested:
