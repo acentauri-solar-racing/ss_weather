@@ -41,6 +41,9 @@ class Preprocessor():
             Inputs:
                 raw_forecast_df (pd.DataFrame): The forecast dataframe with site_id and time columns."""
         
+        # Convert the index of route_df to object (string) type
+        self.route_df.index = self.route_df.index.astype(str)
+        
         # Given a site_id from processing_df, find the corresponding name from sites_df, find the cumDistance from route_df
         index_forecast = raw_forecast_df.index.get_level_values('site_id').unique()
         index_sites = self.sites_df.index
@@ -53,7 +56,7 @@ class Preprocessor():
         restructured_df = raw_forecast_df.reset_index().merge(self.sites_df[['name']], left_on='site_id', right_index=True)
 
         # Convert the name column to int64
-        restructured_df['name'] = restructured_df['name'].astype('int64')
+        # restructured_df['name'] = restructured_df['name'].astype('int64')
 
         # Merge the result with route_df on name to get cumDistance
         restructured_df = restructured_df.merge(self.route_df[['cumDistance']], left_on='name', right_index=True)
