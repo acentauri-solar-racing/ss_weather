@@ -43,13 +43,6 @@ class ApiParser():
         utc_delta = pd.Timedelta(hours=float(offset_str))
 
         return utc_delta
-
-    def parse_add_measurement_dataframe(self, dataframe:pd.DataFrame) -> str:
-        """
-        TODO
-        """
-        # TODO
-        pass
     
     def parse_site_add_response(self, response:requests.models.Response, function_tag:str) -> pd.DataFrame:
         """ Parse the response from the site_add function.

@@ -12,7 +12,7 @@ class ApiRequester():
         service (str): The service to be used.
         format (str): The response format (default: 'json'). """
         
-    API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1?'
+    API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1'
     KEY: str = constants.KEY
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
@@ -73,90 +73,40 @@ class ApiRequester():
 
         self._check_variables(variables)
 
-        mdx_url = f'{self.API_WEBSITE}key={self.KEY}&service={self.SERVICE}'
+        mdx_url = f'{self.API_WEBSITE}?key={self.KEY}&service={self.SERVICE}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
 
-        response = requests.get(mdx_url, timeout=10)
-
-        return response
+        return requests.get(url=mdx_url, timeout=10)
     
     def _send_post_request(self, variables:dict) -> requests.models.Response:
-        """ Format the URL and send a POST request. """
+        """ Send a POST request."""
+        return requests.post(url=self.API_WEBSITE, data=variables, timeout=10)
+    
+    def post_add_measurement(self, gh_df:pd.DataFrame, print_is_requested:bool=True) -> None:
+        """ Call the API to post the irradiance measurements.
 
-        self._check_variables(variables)
+            Inputs:
+                gh_df (pd.DataFrame): The irradiance dataframe with site id and time as index and global irradiance (gh) as columns."""
+        
+        # Convert the irradiance dataframe to dictionary
+        gh_dict = {
+            site_id: {
+                time: {"gh": row['gh']} for time, row in group.iterrows()
+            }
+            for site_id, group in gh_df.groupby(level='site_id')
+        }
 
-        # TODO
-
-        url = "https://mdx.meteotest.ch/api_v1"
-
-        payload = {'key': self.KEY,
+        variables = {'key': self.KEY,
         'service': self.SERVICE,
         'format': self.FORMAT,
         'action': 'add_measurements',
-        'measurements': '{584990: {"2023-08-27 14:00:00": {"gh": 230},"2023-08-27 14:15:00": {"gh": 220}}}'}
-        files=[
+        'measurements': str(gh_dict)}
 
-        ]
-        headers = {}
-
-        response = requests.request("POST", url, headers=headers, data=payload, files=files)
-
-        print(response.text)
-
-        mdx_url = f'{self.API_WEBSITE}key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
-        for key, value in variables.items():
-            mdx_url += f'&{key}={value}'
-
-        response = requests.post(mdx_url, timeout=10)
-
-        return response
-    
-    def post_add_measurement(self, site_id:int, dataframe:pd.DataFrame, print_is_requested:bool=True) -> None:
-        """
-        TODO
-        """
-        # Check if dataframe is a Pandas DataFrame
-        if not isinstance(dataframe, pd.DataFrame):
-            raise ValueError('dataframe must be a Pandas DataFrame.')
-        
-        # Check if dataframe has the correct columns
-        column_names = ['SITE_ID', 'TIMESTAMP', 'GH']
-        if not set(dataframe.columns) == set(column_names):
-            raise ValueError(f"dataframe columns must be {column_names}. Received: {dataframe.columns}")
-        
-        # Call parser
-        json_data = self.parser.parse_add_measurement_dataframe(dataframe=dataframe, function_tag='add_measurements')
-
-        # json_data = {
-        #         SITE-ID: {
-        #             "2021-06-11 05:00:00": {
-        #                 "gh": 58
-        #             },
-        #             "2021-06-11 05:15:00": {
-        #                 "gh": 219
-        #             },
-        #             "2021-06-11 05:30:00": {
-        #                 "gh": 369
-        #             },
-        #             ...
-        #         },
-        #         SITE-ID: {
-        #             ...
-        #         }
-        # }
-        # {584990: {"2023-08-26 09:15:00": {"gh": 620},"2023-08-26 09:30:00": {"gh": 624},"2023-08-26 09:45:00": {"gh": 605}}}
-
-        variables = {
-            'action': 'add_measurements',
-            'measurements': json_data
-        }
-        response = self._send_post_request(variables)
-
-        # Parser not needed, because the response is not interesting
+        self._send_post_request(variables)
 
         if print_is_requested:
-            print(f"Measurements for site {site_id} has been added.")
+            print('Measurements have been sent.')
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
         """ Call the API to add a new site given the inputs. 
