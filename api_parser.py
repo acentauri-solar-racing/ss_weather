@@ -39,7 +39,7 @@ class ApiParser():
     def _convert_to_timedelta(self, utc_string:str) -> pd.Timedelta:
         """ Convert a UTC offset string to a Timedelta object. """
 
-        offset_str = utc_string.replace("UTC+", "")
+        offset_str = utc_string.replace("UTC", "")
         utc_delta = pd.Timedelta(hours=float(offset_str))
 
         return utc_delta

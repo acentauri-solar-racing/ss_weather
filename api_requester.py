@@ -194,7 +194,10 @@ class ApiRequester():
         
             Inputs:
                 site_id (int): The id of the site to be edited.
-                print_is_requested (bool): Whether to print the result (default: True)."""
+                print_is_requested (bool): Whether to print the result (default: True).
+                **kwargs: The keyword arguments to be edited:
+                    name (str): The new name of the site.
+                    position (dict): The new position of the site with 'longitude' and 'latitude' keys."""
         
         variables = {
             'action': 'siteedit',
@@ -204,23 +207,38 @@ class ApiRequester():
         string = ""
         correct_kwargs:bool = False
 
-        # Check if kwargs contains 'name' or 'position'
+        # Check if kwargs contains 'name'
         if 'name' in kwargs:
-            variables['name'] = kwargs['name']
-            string += f"New name: {kwargs['name']}. "
-            correct_kwargs = True
+            name = kwargs['name']
 
+            # Check if name is not None, a string, and not empty
+            if name is None and not isinstance(name, str) and name == '':
+                raise ValueError("Name should be a non-empty string.")
+            else:
+                variables['name'] = name # Assign the new name to the variables to be sent
+                string += f"New name: {name}. "
+                correct_kwargs = True
+                
+        # Check if kwargs contains 'position'
         if 'position' in kwargs:
             position = kwargs['position']
 
-            # Check if position is a dictionary with 'longitude' and 'latitude' keys
-            if isinstance(position, dict) and 'longitude' in position and 'latitude' in position:
+            # Check if position is not None, a dictionary with 'longitude' and 'latitude' keys
+            if position is None and not isinstance(position, dict) and 'longitude' not in position and 'latitude' not in position:
+                raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
+            else:
+                # Check if longitude and latitude are of different type
+                if not isinstance(position['longitude'], type(position['latitude'])):
+                    raise ValueError("Longitude and latitude must be of the same type.")
+                
+                # Check if longitude and latitude are not NaN
+                if pd.isna(position['longitude']) or pd.isna(position['latitude']):
+                    raise ValueError("Longitude and latitude cannot be NaN.")
+
                 variables['longitude'] = position['longitude']
                 variables['latitude'] = position['latitude']
                 string += f"New position: Longitude: {position['longitude']}, latitude: {position['latitude']}. "
                 correct_kwargs = True
-            else:
-                raise ValueError("Position should be a dictionary with 'longitude' and 'latitude' keys.")
         
         if not correct_kwargs:
             print_is_requested = False
