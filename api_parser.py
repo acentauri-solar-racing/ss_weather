@@ -3,6 +3,7 @@ from typing import Tuple
 import requests
 import json
 from bs4 import BeautifulSoup
+import pytz
 
 class ApiParser():
     """ Class for parsing the API responses. """
@@ -132,7 +133,9 @@ class ApiParser():
         data_to_concat = [
             {
                 'site_id': int(site_id),
-                'time': pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S') + forecast_sites.loc[int(site_id), 'UTC_offset'],
+                'time': (pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S')
+                        .tz_localize('UTC')
+                        .astimezone(pytz.FixedOffset(forecast_sites.loc[int(site_id), 'UTC_offset'].total_seconds() / 60))),
                 **time_forecast
             }
             for site_id, site_forecast in sites_data.items()

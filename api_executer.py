@@ -49,8 +49,8 @@ class ApiExecuter():
             
             Inputs:
                 edit_df (pd.DataFrame): The sites dataframe with site_id as index and name, latitude, and longitude as columns.
-                    for unchaged name: * = None or * = ''
-                    for unchaged latitude or longitude: * = None or * = NaN
+                    for unchaged name: * = None, * = '', column not given
+                    for unchaged latitude or longitude: * = None, * = NaN, or columns not given
                     both longitude and latitude have to be provided to change the position
                 print_is_requested (bool): Whether to print the requested sites."""
         
@@ -61,14 +61,36 @@ class ApiExecuter():
         self._check_sites_id(edit_df.index.tolist())
 
         for site_id in edit_df.index:
-            # Extract the value to change
-            name = edit_df.loc[site_id, 'name']
-            latitude = edit_df.loc[site_id, 'latitude']
-            longitude = edit_df.loc[site_id, 'longitude']
+            change_name = True
+            change_position = True
+
+            # Check if the name column exists
+            if 'name' not in edit_df.columns:
+                change_name = False
             
-            # Call site_edit
-            position = {'longitude': longitude, 'latitude': latitude}
-            self.requester.get_site_edit(site_id, print_is_requested=print_is_requested, name=name, position=position)
+            # Check if the position columns exist
+            if 'latitude' not in edit_df.columns or 'longitude' not in edit_df.columns:
+                change_position = False
+
+            # Extract the value to change
+            if change_name and change_position:
+                name = edit_df.loc[site_id, 'name']
+                latitude = edit_df.loc[site_id, 'latitude']
+                longitude = edit_df.loc[site_id, 'longitude']
+                position = {'longitude': longitude, 'latitude': latitude}
+                self.requester.get_site_edit(site_id, print_is_requested=print_is_requested, name=name, position=position)
+            
+            elif change_name:
+                name = edit_df.loc[site_id, 'name']
+                self.requester.get_site_edit(site_id, print_is_requested=print_is_requested, name=name)
+            
+            elif change_position:
+                latitude = edit_df.loc[site_id, 'latitude']
+                longitude = edit_df.loc[site_id, 'longitude']
+                position = {'longitude': longitude, 'latitude': latitude}
+                self.requester.get_site_edit(site_id, print_is_requested=print_is_requested, position=position)
+            else:
+                print("Nothing to change for this site.")
 
         if print_is_requested:
             print(f"Requested sites have been edited: \n {self.requester.forecast_sites}")

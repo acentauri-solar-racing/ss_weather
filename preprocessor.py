@@ -5,6 +5,8 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
+import pytz
+from dateutil.tz import tzlocal
 
 class Preprocessor():
     """ Class for preprocessing the forecast data and making them ready for Dynamic Programming and Model Predictive Control.
@@ -75,12 +77,26 @@ class Preprocessor():
             Inputs:
                 hours_in_advance (int): The number of hours in advance to keep. """
         
+        # Get the (local) timezone of the machine
+        local_tz = tzlocal()
+
+        # Create a timezone-aware Timestamp using the local timezone
+        now = pd.Timestamp.now(tz=local_tz)
+
         # Drop past columns: less than now less 15 min to keep last row
-        now = pd.Timestamp.now()
-        self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time') >= now - pd.Timedelta(minutes=15)]
+        self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time').tz_convert('UTC') >= now.tz_convert('UTC') - pd.Timedelta(minutes=15)]
         
         # Drop future columns: more than x hours
-        self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance, minutes=15)]
+        self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time').tz_convert('UTC') <= now.tz_convert('UTC') + pd.Timedelta(hours=hours_in_advance, minutes=15)]
+
+        #########
+        
+        # # Drop past columns: less than now less 15 min to keep last row
+        # now = pd.Timestamp.now()
+        # self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time') >= now - pd.Timedelta(minutes=15)]
+        
+        # # Drop future columns: more than x hours
+        # self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance, minutes=15)]
 
         self._print(f'Forecast data cut to {hours_in_advance} hours in advance.')
 
@@ -210,6 +226,9 @@ class Preprocessor():
 
         # Rename global irradiance column
         self.preprocess_df.rename(columns={'gh': 'globalIrradiance'}, inplace=True) # in W m⁻²
+
+        # Round to 3 decimals
+        self.preprocess_df = self.preprocess_df.round(3)
 
         return self.forecast_df, self.preprocess_df
     
