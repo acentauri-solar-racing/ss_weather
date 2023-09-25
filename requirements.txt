@@ -10,3 +10,4 @@ scipy
 tkinter
 geocoder
 pytz
+python-dateutil

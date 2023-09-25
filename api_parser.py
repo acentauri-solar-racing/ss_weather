@@ -96,7 +96,7 @@ class ApiParser():
             print(f'Response from {function_tag} is empty.')
             return pd.DataFrame(), response_formatted
 
-        data_to_concat = [ # TODO UNIRE CON QUELLA DELLA INFO PER EVITARE ERRORI
+        data_to_concat = [
             {
                 'site_id': int(site_id),
                 'name': site_info['name'],

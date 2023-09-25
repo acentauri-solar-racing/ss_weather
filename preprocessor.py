@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
+from typing import Tuple
 import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
-import pytz
 from dateutil.tz import tzlocal
 
 class Preprocessor():
@@ -183,7 +183,7 @@ class Preprocessor():
 
         self._print(f'Air density estimation applied.')
 
-    def preprocess(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, raw_forecast_df:pd.DataFrame, hours_in_advance:int, print_is_requested:bool=False):
+    def preprocess(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, raw_forecast_df:pd.DataFrame, hours_in_advance:int, print_is_requested:bool=False) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """ Preprocess the forecast data and make them ready for Dynamic Programming and Model Predictive Control.
         
             Inputs:
@@ -228,6 +228,7 @@ class Preprocessor():
         self.preprocess_df.rename(columns={'gh': 'globalIrradiance'}, inplace=True) # in W m⁻²
 
         # Round to 3 decimals
+        self.forecast_df = self.forecast_df.round(3)
         self.preprocess_df = self.preprocess_df.round(3)
 
         return self.forecast_df, self.preprocess_df
@@ -279,8 +280,8 @@ class Preprocessor():
             os.makedirs(preprocess_folder_path)
             
             # Save each column of data_to_save as a separate CSV
-            for column in self.forecast_df.columns:
-                column_data = self.forecast_df[column].unstack(level=0)
+            for column in self.preprocess_df.columns:
+                column_data = self.preprocess_df[column].unstack(level=0)
                 file_name = f"{column}.csv"
                 file_path = os.path.join(preprocess_folder_path, file_name)
                 column_data.to_csv(file_path)
