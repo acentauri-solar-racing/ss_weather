@@ -1,9 +1,9 @@
-import pandas as pd
-from typing import Tuple
 import requests
 import json
-from bs4 import BeautifulSoup
 import pytz
+import pandas as pd
+from typing import Tuple
+from bs4 import BeautifulSoup
 
 class ApiParser():
     """ Class for parsing the API responses. """
@@ -38,7 +38,10 @@ class ApiParser():
             print(f'Unknown content type from {function_tag}.')
 
     def _convert_to_timedelta(self, utc_string:str) -> pd.Timedelta:
-        """ Convert a UTC offset string to a Timedelta object. """
+        """ Convert a UTC offset string to a Timedelta object. 
+        
+            Inputs:
+                utc_string (str): The UTC offset string. """
 
         offset_str = utc_string.replace("UTC", "")
         utc_delta = pd.Timedelta(hours=float(offset_str))
@@ -71,7 +74,6 @@ class ApiParser():
             'altitude': sites_data["altitude"],
             'UTC_offset': self._convert_to_timedelta(sites_data["utc_offset"])
         }]
-
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id'])
 
         return response_df
@@ -107,7 +109,6 @@ class ApiParser():
             }
             for site_id, site_info in sites_data.items()
         ]
-
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id'])
 
         return response_df, response_formatted
@@ -143,5 +144,6 @@ class ApiParser():
         ]
 
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id', 'time'])
+        response_df = response_df.round(3)
 
         return response_df

@@ -1,6 +1,6 @@
 import requests
-import pandas as pd
 import constants
+import pandas as pd
 from api_parser import ApiParser
 
 class ApiRequester():
@@ -17,13 +17,12 @@ class ApiRequester():
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
 
-    def __init__(self, parser:ApiParser, print_is_requested:bool=True) -> None:
+    def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
         self.parser = parser
+        self.print_is_requested: bool = print_is_requested
+        self.forecast_sites = self.get_site_info()
 
-        dataframe = self.get_site_info(print_is_requested=False)
-        self.forecast_sites = dataframe
-
-        if print_is_requested:
+        if self.print_is_requested:
             print(f"Current sites' info has been retrieved. \n {self.forecast_sites}")
     
     def _check_variables(self, variables:dict) -> None:
@@ -64,7 +63,7 @@ class ApiRequester():
                     indices = self.forecast_sites.index
                     if value not in indices:
                         raise ValueError(f'{variable} has to be one of {indices}. Received: {value}')
-            
+    
     def _send_get_request(self, variables:dict) -> requests.models.Response:
         """ Format the URL and send a GET request to the API. 
         
@@ -80,14 +79,18 @@ class ApiRequester():
         return requests.get(url=mdx_url, timeout=10)
     
     def _send_post_request(self, variables:dict) -> requests.models.Response:
-        """ Send a POST request."""
+        """ Send a POST request.
+        
+        Inputs:
+            variables (dict): The variables to be sent to the API. """
+        
         return requests.post(url=self.API_WEBSITE, data=variables, timeout=10)
     
-    def post_add_measurement(self, gh_df:pd.DataFrame, print_is_requested:bool=True) -> None:
+    def post_add_measurement(self, gh_df:pd.DataFrame, print_is_requested:bool=False) -> None:
         """ Call the API to post the irradiance measurements.
 
             Inputs:
-                gh_df (pd.DataFrame): The irradiance dataframe with site id and time as index and global irradiance (gh) as columns."""
+                gh_df (pd.DataFrame): The irradiance dataframe with site id and time as index and global irradiance (gh) as columns. """
         
         # Convert the irradiance dataframe to dictionary
         gh_dict = {
@@ -106,10 +109,10 @@ class ApiRequester():
         }
         self._send_post_request(variables)
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print('Measurements have been sent.')
 
-    def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=True) -> None:
+    def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=False) -> None:
         """ Call the API to add a new site given the inputs. 
         
             Inputs:
@@ -118,7 +121,7 @@ class ApiRequester():
                 longitude (float): The longitude of the site.
                 azimuth (int): The azimuth of the site (default: 0).
                 inclination (int): The inclination of the site (default: 0).
-                print_is_requested (bool): Whether to print the result (default: True)."""
+                print_is_requested (bool): Whether to print the result (default: True). """
 
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
             'action': 'siteadd',
@@ -137,10 +140,10 @@ class ApiRequester():
         # Add the new site to the forecast_sites DataFrame
         self.forecast_sites = pd.concat([self.forecast_sites, response_df])
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print(f'Site with name {name} has been added. \n {self.forecast_sites}')
 
-    def get_site_edit(self, site_id:int, print_is_requested:bool=True, **kwargs) -> None:
+    def get_site_edit(self, site_id:int, print_is_requested:bool=False, **kwargs) -> None:
         """ Edit name or position (longitude and latitude).
         
             Inputs:
@@ -148,7 +151,7 @@ class ApiRequester():
                 print_is_requested (bool): Whether to print the result (default: True).
                 **kwargs: The keyword arguments to be edited:
                     name (str): The new name of the site.
-                    position (dict): The new position of the site with 'longitude' and 'latitude' keys."""
+                    position (dict): The new position of the site with 'longitude' and 'latitude' keys. """
         
         variables = {
             'action': 'siteedit',
@@ -166,7 +169,8 @@ class ApiRequester():
             if name is None and not isinstance(name, str) and name == '':
                 raise ValueError("Name should be a non-empty string.")
             else:
-                variables['name'] = name # Assign the new name to the variables to be sent
+                # Assign the new name to the variables to be sent
+                variables['name'] = name
                 string += f"New name: {name}. "
                 correct_kwargs = True
                 
@@ -194,6 +198,7 @@ class ApiRequester():
         if not correct_kwargs:
             print_is_requested = False
             print("Nothing to edit.")
+            return
 
         self._send_get_request(variables)
 
@@ -208,10 +213,10 @@ class ApiRequester():
             self.forecast_sites.at[site_id, 'longitude'] = position['longitude']
             self.forecast_sites.at[site_id, 'latitude'] = position['latitude']
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print(f'Site with id {site_id} has been edited: {string} \n {self.forecast_sites}')
 
-    def get_site_delete(self, site_id:int, print_is_requested:bool=True) -> None:
+    def get_site_delete(self, site_id:int, print_is_requested:bool=False) -> None:
         """ Call the API to delete a site given the id.
 
             Inputs:
@@ -230,10 +235,10 @@ class ApiRequester():
         # Delete the new site to the forecast_sites DataFrame
         self.forecast_sites.drop(site_id, inplace=True)
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print(f'Site with id {site_id} has been removed. \n {self.forecast_sites}')
 
-    def get_site_info(self, print_is_requested:bool=True) -> pd.DataFrame:
+    def get_site_info(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the information of all sites.
 
             Inputs:
@@ -248,12 +253,12 @@ class ApiRequester():
         # Parse the response
         response_df, response_formatted = self.parser.parse_site_info_response(response, function_tag=variables['action'])
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print(f"Site information have been retrieved: \n {response_formatted}")
 
         return response_df
 
-    def get_solar_forecast(self, print_is_requested:bool=True) -> pd.DataFrame:
+    def get_solar_forecast(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the solar forecast for the next 72 hours.
 
             Inputs:
@@ -268,12 +273,12 @@ class ApiRequester():
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print("Solar forecast have been retrieved.")
 
         return response_df
 
-    def get_solar_forecast_cloudmove(self, print_is_requested:bool=True) -> pd.DataFrame:
+    def get_solar_forecast_cloudmove(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the CloudMove forecast for the next 6 hours.
 
             Inputs:
@@ -288,7 +293,7 @@ class ApiRequester():
         # Parse the response
         response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
 
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
 
         return response_pd

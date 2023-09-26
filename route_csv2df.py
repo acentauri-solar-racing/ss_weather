@@ -27,5 +27,6 @@ class RouteDF():
         # else:
         #     print("No directory chosen. Data not read.")
 
+    @property
     def get_route_data(self) -> pd.DataFrame:
         return self.route_data

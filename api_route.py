@@ -11,10 +11,10 @@ class ApiRoute():
         max_distance (float): The maximum distance of the route.
         kdtree (scipy.spatial.KDTree): The k-d tree for searching. """
     
-    def __init__(self, route_data:pd.DataFrame) -> None:
-        # Save complete route data
+    def __init__(self, route_data:pd.DataFrame, print_is_requested:bool=False) -> None:
         self.route_data = route_data
         self.max_distance = self.route_data['cumDistance'].max()
+        self.print_is_requested = print_is_requested
 
         # Create k-d tree for searching
         self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
@@ -46,7 +46,7 @@ class ApiRoute():
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
     
-    def find_closest_point(self, position:dict, print_is_requested:bool=True) -> pd.Series:
+    def _find_closest_point(self, position:dict, print_is_requested:bool=False) -> pd.Series:
         """ Find the closest point in the route to the given position.
 
             Inputs:
@@ -59,14 +59,14 @@ class ApiRoute():
 
         # Query the k-d tree to find the nearest point index
         nearest_point_index = self.kdtree.query([actual_coords], k=1)[1][0]
-
-        if print_is_requested:
-            print('Nearest point index:', nearest_point_index)
-
         closest_point = self.route_data.iloc[nearest_point_index]
+
+        if self.print_is_requested or print_is_requested:
+            print('Nearest point index:', nearest_point_index)
+        
         return closest_point
 
-    def cut_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=True) -> pd.DataFrame:
+    def cut_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=False) -> pd.DataFrame:
         """ Cut the route data given the current position, final position, number of sites, and delta spacing.
         
             Inputs:
@@ -97,7 +97,7 @@ class ApiRoute():
         
         # If current position is given
         if current_position is not None:
-            closest_point = self.find_closest_point(position=current_position, print_is_requested=print_is_requested)
+            closest_point = self._find_closest_point(position=current_position, print_is_requested=print_is_requested)
             start_index = closest_point.name
 
             # Subtract cumulative distance
@@ -113,7 +113,7 @@ class ApiRoute():
             if number_sites is not None and delta_spacing is not None:
                 raise ValueError('The final position cannot be given with number_sites and delta_spacing')
             
-            closest_point = self.find_closest_point(position=final_position, print_is_requested=print_is_requested)
+            closest_point = self._find_closest_point(position=final_position, print_is_requested=print_is_requested)
             end_index = closest_point.name
 
             if end_index < start_index:
@@ -193,7 +193,7 @@ class ApiRoute():
                 interpolated_values = np.interp(x, xp, fp)
                 interpolated_data[column] = interpolated_values.tolist()
         
-        if print_is_requested:
+        if self.print_is_requested or print_is_requested:
             print(interpolated_data)
 
         return interpolated_data

@@ -1,11 +1,11 @@
 import os
 import time
+import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
 import pandas as pd
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 from typing import Tuple
-import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
 from dateutil.tz import tzlocal
 
 class Preprocessor():
@@ -17,13 +17,14 @@ class Preprocessor():
         sites_df (pd.DataFrame): The sites dataframe with name and site_id columns.
         forecast_df (pd.DataFrame): The forecast dataframe with site_id and time columns.
         preprocess_df (pd.DataFrame): The forecast dataframe with cumDistance and time columns. """
+    
+    # Constants for wind log correction
+    ROUGHNESS_LENGTH_Z0 = 0.03 # in meters from roughness class 1 (https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh)
+    REFERENCE_HEIGHT_H1 = 10.0 # in meters
+    WIND_HEIGHT_H2 = 0.5 # in meters
+    CORRECTING_FACTOR = np.log(WIND_HEIGHT_H2 / ROUGHNESS_LENGTH_Z0) / np.log(REFERENCE_HEIGHT_H1 / ROUGHNESS_LENGTH_Z0)
 
     def __init__(self, print_is_requested:bool=False) -> None:
-        self.ROUGHNESS_LENGTH_Z0 = 0.03 # in meters from roughness class 1 (https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh)
-        self.REFERENCE_HEIGHT_H1 = 10.0 # in meters
-        self.WIND_HEIGHT_H2 = 0.5 # in meters
-        self.CORRECTING_FACTOR = np.log(self.WIND_HEIGHT_H2 / self.ROUGHNESS_LENGTH_Z0) / np.log(self.REFERENCE_HEIGHT_H1 / self.ROUGHNESS_LENGTH_Z0)
-        
         self.print_is_requested = print_is_requested
         self.last_save_directory:str = ''
 
@@ -57,9 +58,6 @@ class Preprocessor():
         # Merge forecast_df with sites_df on site_id to get the name
         restructured_df = raw_forecast_df.reset_index().merge(self.sites_df[['name']], left_on='site_id', right_index=True)
 
-        # Convert the name column to int64
-        # restructured_df['name'] = restructured_df['name'].astype('int64')
-
         # Merge the result with route_df on name to get cumDistance
         restructured_df = restructured_df.merge(self.route_df[['cumDistance']], left_on='name', right_index=True)
 
@@ -77,31 +75,23 @@ class Preprocessor():
             Inputs:
                 hours_in_advance (int): The number of hours in advance to keep. """
         
-        # Get the (local) timezone of the machine
+        if hours_in_advance is None:
+            return
+        
+        # Get the timezone of the machine (it depends on the settings) and create a time-aware Timestamp
         local_tz = tzlocal()
-
-        # Create a timezone-aware Timestamp using the local timezone
         now = pd.Timestamp.now(tz=local_tz)
 
         # Drop past columns: less than now less 15 min to keep last row
         self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time').tz_convert('UTC') >= now.tz_convert('UTC') - pd.Timedelta(minutes=15)]
         
-        # Drop future columns: more than x hours
+        # Drop future columns: more than x hours and 15 minutes
         self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time').tz_convert('UTC') <= now.tz_convert('UTC') + pd.Timedelta(hours=hours_in_advance, minutes=15)]
-
-        #########
-        
-        # # Drop past columns: less than now less 15 min to keep last row
-        # now = pd.Timestamp.now()
-        # self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time') >= now - pd.Timedelta(minutes=15)]
-        
-        # # Drop future columns: more than x hours
-        # self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time') <= now + pd.Timedelta(hours=hours_in_advance, minutes=15)]
 
         self._print(f'Forecast data cut to {hours_in_advance} hours in advance.')
 
     def _temperature_correction(self) -> None:
-        """ Correct the temperature forecast with the corrections suggested by Pascal Graf from Meteotest. """
+        """ Correct the temperature forecast with the corrections suggested by Pascal Graf from Meteotest in °C. """
 
         # Extract the time values from the multi-index
         times_hours = self.preprocess_df.index.get_level_values('time').hour
@@ -110,7 +100,6 @@ class Preprocessor():
         mask_night = (times_hours >= 20) | (times_hours <= 8)
         mask_day = (times_hours >= 10) & (times_hours <= 16)
 
-        # Change column name
         self.preprocess_df.rename(columns={'tt': 'temperature'}, inplace=True)
 
         # Apply the corrections
@@ -121,20 +110,18 @@ class Preprocessor():
         self._print(f'Temperature correction applied.')
 
     def _wind_log_correction(self) -> None:
-        """ Correct the wind speed and gust forecast at 10 meters to the wind speed at 0.5 meters.
-        Equation taken from: https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh
-        """
-        self.preprocess_df.rename(columns={
-            'ff': 'windSpeed',
-            'fx': 'windGust'
-        }, inplace=True)
+        """ Correct the wind speed and gust forecast at 10 meters to the wind speed at 0.5 meters in m/s.
+            Equation taken from:
+            https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh. """
+
+        self.preprocess_df.rename(columns={'ff': 'windSpeed', 'fx': 'windGust'}, inplace=True)
 
         self.preprocess_df[['windSpeed', 'windGust']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
 
         self._print(f'Wind log correction applied.')
 
     def _wind_decomposition(self) -> None:
-        """ Decompose the wind forecast at 0.5 meters to side and front wind. """
+        """ Decompose the wind forecast at 0.5 meters to side and front wind in m/s. """
 
         self.preprocess_df.rename(columns={'dd': 'windDirection'}, inplace=True)
         
@@ -143,14 +130,17 @@ class Preprocessor():
         theta_mapped = self.preprocess_df.index.get_level_values('cumDistance').map(theta) # Map the cumDistance level of wind_direction's index to the values in theta
         attack_angle = self.preprocess_df['windDirection'] - theta_mapped # in degrees
 
-        # Calculate wind speed components
+        # Calculate wind speed components in m/s
         self.preprocess_df['sideWind'] = self.preprocess_df['windSpeed'] * np.sin(np.radians(attack_angle)) / 3.6
         self.preprocess_df['frontWind'] = self.preprocess_df['windSpeed'] * np.cos(np.radians(attack_angle)) / 3.6
 
         self._print(f'Wind decomposition applied.')
 
     def _air_density_estimation(self) -> None:
-        """ Estimate the air density from the altitude, temperature and relative humidity. https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren """
+        """ Estimate the air density from the altitude, temperature and relative humidity.
+            Equation taken from:
+            https://wind-data.ch/tools/luftdichte.php?method=2&pr=990&t=25&rh=99&abfrage2=Aktualisieren. """
+        
         psychrolib.SetUnitSystem(psychrolib.SI)
 
         # Extract altitude data and calculate atmospheric pressure
@@ -167,9 +157,8 @@ class Preprocessor():
             ), 
             axis=1
         )
-
         # Calculate air density
-        self.preprocess_df['airDensity'] = self.preprocess_df.apply(
+        self.preprocess_df['airDensity'] = self.preprocess_df.apply( # in kg_Air m⁻³ [SI]
             lambda row: psychrolib.GetMoistAirDensity(
                 TDryBulb=row['temperature'], # in °C
                 HumRatio=row['humidity_ratio'], # in kg_H₂O kg_Air⁻¹ [SI]
@@ -177,13 +166,12 @@ class Preprocessor():
             ), 
             axis=1
         )
-
         # Drop unnecessary columns
         self.preprocess_df.drop(columns=['rh', 'pressure', 'humidity_ratio'], inplace=True)
 
         self._print(f'Air density estimation applied.')
 
-    def preprocess(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, raw_forecast_df:pd.DataFrame, hours_in_advance:int, print_is_requested:bool=False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def preprocess(self, route_df:pd.DataFrame, sites_df:pd.DataFrame, raw_forecast_df:pd.DataFrame, hours_in_advance:int=None, print_is_requested:bool=False) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """ Preprocess the forecast data and make them ready for Dynamic Programming and Model Predictive Control.
         
             Inputs:
@@ -193,14 +181,10 @@ class Preprocessor():
                 hours_in_advance (int): The number of hours in advance to keep.
                 print_is_requested (bool): Whether to print the preprocessing steps. """
         
-        if not isinstance(route_df, pd.DataFrame) or not isinstance(raw_forecast_df, pd.DataFrame):
-            raise ValueError("Input data should be of type pandas DataFrame")
-        
         self.print_is_requested = print_is_requested
         self.route_df = route_df
         self.sites_df = sites_df
 
-        # Restructure the raw forecast data
         self.forecast_df = self._data_restructure(raw_forecast_df)
 
         # Restructure and correct the data for Dynamic Programming and Model Predictive Control
