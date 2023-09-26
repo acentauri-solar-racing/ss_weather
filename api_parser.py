@@ -144,6 +144,5 @@ class ApiParser():
         ]
 
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id', 'time'])
-        response_df = response_df.round(3)
 
         return response_df

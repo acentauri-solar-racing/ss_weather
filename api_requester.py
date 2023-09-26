@@ -19,11 +19,16 @@ class ApiRequester():
 
     def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
         self.parser = parser
-        self.print_is_requested: bool = print_is_requested
         self.forecast_sites = self.get_site_info()
 
-        if self.print_is_requested:
-            print(f"Current sites' info has been retrieved. \n {self.forecast_sites}")
+        if print_is_requested:
+            print("Current sites' info has been retrieved:")
+            self.print_current_sites
+
+    @property
+    def print_current_sites(self) -> None:
+        """ Print the current sites' info. """
+        print(self.forecast_sites)
     
     def _check_variables(self, variables:dict) -> None:
         """ Check if the variables are of the correct type and between the ranges. 
@@ -109,7 +114,7 @@ class ApiRequester():
         }
         self._send_post_request(variables)
 
-        if self.print_is_requested or print_is_requested:
+        if print_is_requested:
             print('Measurements have been sent.')
 
     def get_site_add(self, name:str, latitude:float, longitude:float, azimuth:int=0, inclination:int=0, print_is_requested:bool=False) -> None:
@@ -140,8 +145,8 @@ class ApiRequester():
         # Add the new site to the forecast_sites DataFrame
         self.forecast_sites = pd.concat([self.forecast_sites, response_df])
 
-        if self.print_is_requested or print_is_requested:
-            print(f'Site with name {name} has been added. \n {self.forecast_sites}')
+        if print_is_requested:
+            print(f'Site with name {name} has been added.')
 
     def get_site_edit(self, site_id:int, print_is_requested:bool=False, **kwargs) -> None:
         """ Edit name or position (longitude and latitude).
@@ -213,8 +218,8 @@ class ApiRequester():
             self.forecast_sites.at[site_id, 'longitude'] = position['longitude']
             self.forecast_sites.at[site_id, 'latitude'] = position['latitude']
 
-        if self.print_is_requested or print_is_requested:
-            print(f'Site with id {site_id} has been edited: {string} \n {self.forecast_sites}')
+        if print_is_requested:
+            print(f'Site with id {site_id} has been edited: {string} \n {self.forecast_sites.at[site_id]}')
 
     def get_site_delete(self, site_id:int, print_is_requested:bool=False) -> None:
         """ Call the API to delete a site given the id.
@@ -235,8 +240,8 @@ class ApiRequester():
         # Delete the new site to the forecast_sites DataFrame
         self.forecast_sites.drop(site_id, inplace=True)
 
-        if self.print_is_requested or print_is_requested:
-            print(f'Site with id {site_id} has been removed. \n {self.forecast_sites}')
+        if print_is_requested:
+            print(f'Site with id {site_id} has been removed.')
 
     def get_site_info(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the information of all sites.
@@ -253,7 +258,7 @@ class ApiRequester():
         # Parse the response
         response_df, response_formatted = self.parser.parse_site_info_response(response, function_tag=variables['action'])
 
-        if self.print_is_requested or print_is_requested:
+        if print_is_requested:
             print(f"Site information have been retrieved: \n {response_formatted}")
 
         return response_df
@@ -273,7 +278,7 @@ class ApiRequester():
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
 
-        if self.print_is_requested or print_is_requested:
+        if print_is_requested:
             print("Solar forecast have been retrieved.")
 
         return response_df
@@ -293,7 +298,7 @@ class ApiRequester():
         # Parse the response
         response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
 
-        if self.print_is_requested or print_is_requested:
+        if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
 
         return response_pd
