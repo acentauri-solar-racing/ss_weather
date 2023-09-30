@@ -1,16 +1,15 @@
 """Read environment variables and construct the connection string for MySQL DB"""
-import os
 import pandas as pd
 
 # import all DDL classes
-from db.models import *
+from models import *
 
 from dotenv import dotenv_values
+from dotenv import load_dotenv
 
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
 from pandas import DataFrame
-
 
 from typing import Tuple
 
@@ -25,6 +24,7 @@ class DbService:
 
     def conn_string(self) -> str:
         env = dotenv_values(".env")
+        # env = load_dotenv()
         print(env)
 
         return "mysql+pymysql://%s:%s@%s/%s" % (

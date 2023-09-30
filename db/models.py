@@ -1,6 +1,5 @@
-from sqlalchemy import Integer, Float
+from sqlalchemy import Float
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
-from typing import Tuple
 
 Base = declarative_base()
 

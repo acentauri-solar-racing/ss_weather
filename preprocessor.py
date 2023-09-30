@@ -217,7 +217,7 @@ class Preprocessor():
 
         return self.forecast_df, self.preprocess_df
     
-    def save_data(self) -> None:
+    def save_data2folder(self) -> None:
         """ Save the raw forecast data and the preprocessed data to CSV files. """
 
         root = tk.Tk()
@@ -273,3 +273,6 @@ class Preprocessor():
             print(f"Data saved to {new_folder_path}.")
         else:
             print("No directory chosen. Data not saved.")
+
+    def save_data2db(self):
+        pass

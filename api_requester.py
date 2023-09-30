@@ -27,8 +27,13 @@ class ApiRequester():
 
     @property
     def print_current_sites(self) -> None:
-        """ Print the current sites' info. """
+        """ Print the current sites' info."""
         print(self.forecast_sites)
+
+    @property
+    def get_current_sites(self) -> pd.DataFrame:
+        """ Return the current sites' info."""
+        return self.forecast_sites
     
     def _check_variables(self, variables:dict) -> None:
         """ Check if the variables are of the correct type and between the ranges. 
