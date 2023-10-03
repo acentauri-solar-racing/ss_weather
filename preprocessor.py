@@ -247,6 +247,11 @@ class Preprocessor():
             os.makedirs(new_folder_path)
             self.last_save_directory = new_folder_path # Update the last_save_directory attribute
 
+
+            # Save the chosen columns for MPC and DP
+            self.route_df[['cumDistance', 'maxSpeed', 'inclinationSmoothed']].to_csv(os.path.join(new_folder_path, 'route.csv'))
+
+
             # Create a subfolder for the raw forecast data
             forecast_folder_path = os.path.join(new_folder_path, 'raw')
             os.makedirs(forecast_folder_path)
@@ -273,6 +278,3 @@ class Preprocessor():
             print(f"Data saved to {new_folder_path}.")
         else:
             print("No directory chosen. Data not saved.")
-
-    def save_data2db(self):
-        pass
