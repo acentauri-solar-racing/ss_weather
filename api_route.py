@@ -110,21 +110,25 @@ class ApiRoute():
 
         # If final position is given
         if final_position is not None:
-            if number_sites is not None and delta_spacing is not None:
-                raise ValueError('The final position cannot be given with number_sites and delta_spacing')
+            if delta_spacing is not None:
+                raise ValueError('The final position cannot be given with delta_spacing')
             
             closest_point = self._find_closest_point(position=final_position, print_is_requested=print_is_requested)
             end_index = closest_point.name
 
             if end_index < start_index:
-                raise ValueError('The final position is before the start position')
+                raise ValueError('The final position cannot be before the start position')
+            
+            if end_index == start_index:
+                raise ValueError('The final and start position cannot be equal')
 
             # Cut data
-            cut_index = end_index - start_index + 1 # -start_index,+1 to include previous cut and final position
+            cut_index = end_index - start_index + 1 # -start_index+1 to include previous cut and final position
             cut_data = cut_data.iloc[:cut_index].copy()
 
         # Variable to add last point for interpolation
         add_last_point_is_true: bool = True
+
 
         # None of the variables are given
         if number_sites is None and delta_spacing is None:
@@ -136,7 +140,7 @@ class ApiRoute():
             end_distance = cut_data.iloc[-1]['cumDistanceCut']
 
             if total_distance > end_distance:
-                raise ValueError('The total distance is greater than the end distance of the route')
+                raise ValueError('The total distance cannot be greater than the end distance of the route')
             
             # Cut data
             cut_data = cut_data.loc[cut_data['cumDistanceCut'] <= total_distance].copy()
@@ -150,9 +154,13 @@ class ApiRoute():
 
         # Only delta_spacing is given
         elif number_sites is None and delta_spacing is not None:
-            # Nothing to do
-            pass
+            ################################################################# TODO ADD POINTS UNTIL THE END
+            end_distance = cut_data.iloc[-1]['cumDistanceCut']
+
+            if delta_spacing > end_distance:
+                raise ValueError('One delta spacing cannot be greater than the end distance of the route')
         
+
         # Save variables and check
         variables = {
             'number_sites': number_sites,

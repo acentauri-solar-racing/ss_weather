@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import Tuple
 from api_requester import ApiRequester
 
 class ApiExecuter():
@@ -127,3 +128,31 @@ class ApiExecuter():
         
         if self.print_is_requested or print_is_requested:
             print(f"All sites have been deleted: \n {self.requester.forecast_sites}")
+
+    def get_new_solar_forecast(self) -> Tuple[pd.DataFrame, bool]:
+        """ """
+        new_forecast_df = self.requester.get_solar_forecast()
+
+        if new_forecast_df.loc[0,1] == self.requester.previous_SF_df.loc[0,1]:
+            new_forecast_arrived = False
+            new_forecast_df = None
+            print("No new SF forecast")
+        else:
+            new_forecast_arrived = True
+            print("New SF forecast arrived")
+        
+        return new_forecast_df, new_forecast_arrived
+    
+    def get_new_solar_forecast_cloudmove(self) -> Tuple[pd.DataFrame, bool]:
+        """ """
+        new_forecast_df = self.requester.get_solar_forecast_cloudmove()
+
+        if new_forecast_df.loc[0,1] == self.requester.previous_CM_df.loc[0,1]:
+            new_forecast_arrived = False
+            new_forecast_df = None
+            print("No new CM forecast")
+        else:
+            new_forecast_arrived = True
+            print("New CM forecast arrived")
+        
+        return new_forecast_df, new_forecast_arrived

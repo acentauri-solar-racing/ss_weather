@@ -2,6 +2,7 @@ import requests
 import constants
 import pandas as pd
 from typing import Tuple
+from dateutil.tz import tzlocal
 from api_parser import ApiParser
 
 class ApiRequester():
@@ -22,6 +23,11 @@ class ApiRequester():
     def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
         self.parser = parser
         self.forecast_sites = self.get_site_info()
+
+        self.previous_SF_df: pd.DataFrame() = None
+        self.previous_SF_time: pd.Timestamp() = None
+        self.previous_CM_df: pd.DataFrame() = None
+        self.previous_CM_time: pd.Timestamp() = None
 
         if print_is_requested:
             print("Current sites' info has been retrieved:")
@@ -134,7 +140,7 @@ class ApiRequester():
         response, internet_on = self._send_post_request(variables)
 
         # TODO CHECK POST RESPONSE
-        
+
         if not internet_on:
             return
         
@@ -311,6 +317,9 @@ class ApiRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
+        self.previous_SF_df = response_df
+        local_tz = tzlocal()
+        self.previous_SF_time = pd.Timestamp.now(tz=local_tz)
 
         if print_is_requested:
             print("Solar forecast have been retrieved.")
@@ -332,6 +341,9 @@ class ApiRequester():
         
         # Parse the response
         response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
+        self.previous_CM_df = response_pd
+        local_tz = tzlocal()
+        self.previous_CM_time = pd.Timestamp.now(tz=local_tz)
 
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
