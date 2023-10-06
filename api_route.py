@@ -62,7 +62,7 @@ class ApiRoute():
         closest_point = self.route_data.iloc[nearest_point_index]
 
         if self.print_is_requested or print_is_requested:
-            print('Nearest point index in the csv file:', nearest_point_index+2)
+            print('Nearest point index in the csv file:', nearest_point_index + 2)
         
         return closest_point
 
