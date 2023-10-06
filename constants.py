@@ -1,4 +1,5 @@
 ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
+CONTROL_STOPS = '..\\ss_offline_data\\route\\BWSC\\control_stops.csv'
 MAX_SITES_NUMBER = 150
 KEY = '6C985B9DF101FF63EB494A0FF420FCA6'
 FORECAST_PARAMETERS = {

@@ -21,10 +21,8 @@ class Preprocessor():
     # Constants for wind log correction
     ROUGHNESS_LENGTH_Z0 = 0.03 # in meters from roughness class 1 (https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh)
     REFERENCE_HEIGHT_H1 = 10.0 # in meters
-    WIND_HEIGHT_H2 = 0.5 # in meters
-    CORRECTING_FACTOR = np.log(WIND_HEIGHT_H2 / ROUGHNESS_LENGTH_Z0) / np.log(REFERENCE_HEIGHT_H1 / ROUGHNESS_LENGTH_Z0)
-
-    def __init__(self, print_is_requested:bool=False) -> None:
+    
+    def __init__(self, wind_height:float=0.5, print_is_requested:bool=False) -> None:
         self.print_is_requested = print_is_requested
         self.last_save_directory:str = ''
 
@@ -32,6 +30,9 @@ class Preprocessor():
         self.sites_df = pd.DataFrame()
         self.forecast_df = pd.DataFrame()
         self.preprocess_df = pd.DataFrame()
+
+        self.WIND_HEIGHT_H2 = wind_height # in meters (default:0.5)
+        self.CORRECTING_FACTOR = np.log(self.WIND_HEIGHT_H2 / self.ROUGHNESS_LENGTH_Z0) / np.log(self.REFERENCE_HEIGHT_H1 / self.ROUGHNESS_LENGTH_Z0)
 
     def _print(self, message:str) -> None:
         """ Print the message if print_is_requested is True. """
@@ -217,7 +218,7 @@ class Preprocessor():
 
         return self.forecast_df, self.preprocess_df
     
-    def save_data(self) -> None:
+    def save_data2folder(self) -> None:
         """ Save the raw forecast data and the preprocessed data to CSV files. """
 
         root = tk.Tk()
@@ -246,6 +247,11 @@ class Preprocessor():
             new_folder_path = os.path.join(chosen_directory, folder_name)
             os.makedirs(new_folder_path)
             self.last_save_directory = new_folder_path # Update the last_save_directory attribute
+
+
+            # Save the chosen columns for MPC and DP
+            self.route_df[['cumDistance', 'maxSpeed', 'inclinationSmoothed']].to_csv(os.path.join(new_folder_path, 'route.csv'))
+
 
             # Create a subfolder for the raw forecast data
             forecast_folder_path = os.path.join(new_folder_path, 'raw')

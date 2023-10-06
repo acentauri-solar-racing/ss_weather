@@ -1,6 +1,8 @@
 import requests
 import constants
 import pandas as pd
+from typing import Tuple
+from dateutil.tz import tzlocal
 from api_parser import ApiParser
 
 class ApiRequester():
@@ -16,10 +18,16 @@ class ApiRequester():
     KEY: str = constants.KEY
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
+    TIMEOUT: int = 5
 
     def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
         self.parser = parser
         self.forecast_sites = self.get_site_info()
+
+        self.previous_SF_df: pd.DataFrame() = None
+        self.previous_SF_time: pd.Timestamp() = None
+        self.previous_CM_df: pd.DataFrame() = None
+        self.previous_CM_time: pd.Timestamp() = None
 
         if print_is_requested:
             print("Current sites' info has been retrieved:")
@@ -27,8 +35,13 @@ class ApiRequester():
 
     @property
     def print_current_sites(self) -> None:
-        """ Print the current sites' info. """
+        """ Print the current sites' info."""
         print(self.forecast_sites)
+
+    @property
+    def get_current_sites(self) -> pd.DataFrame:
+        """ Return the current sites' info."""
+        return self.forecast_sites
     
     def _check_variables(self, variables:dict) -> None:
         """ Check if the variables are of the correct type and between the ranges. 
@@ -69,7 +82,7 @@ class ApiRequester():
                     if value not in indices:
                         raise ValueError(f'{variable} has to be one of {indices}. Received: {value}')
     
-    def _send_get_request(self, variables:dict) -> requests.models.Response:
+    def _send_get_request(self, variables:dict) -> Tuple[requests.models.Response, bool]:
         """ Format the URL and send a GET request to the API. 
         
         Inputs:
@@ -77,19 +90,31 @@ class ApiRequester():
 
         self._check_variables(variables)
 
-        mdx_url = f'{self.API_WEBSITE}?key={self.KEY}&service={self.SERVICE}'
+        mdx_url = f'{self.API_WEBSITE}?key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
 
-        return requests.get(url=mdx_url, timeout=10)
+        try:
+            response = requests.get(url=mdx_url, timeout=self.TIMEOUT)
+            return response, True
+        
+        except requests.ConnectionError or requests.ConnectTimeout:
+            print("No internet connection.")
+            return None, False
     
-    def _send_post_request(self, variables:dict) -> requests.models.Response:
+    def _send_post_request(self, variables:dict) -> Tuple[requests.models.Response, bool]:
         """ Send a POST request.
         
         Inputs:
             variables (dict): The variables to be sent to the API. """
         
-        return requests.post(url=self.API_WEBSITE, data=variables, timeout=10)
+        try:
+            response = requests.post(url=self.API_WEBSITE, data=variables, timeout=self.TIMEOUT)
+            return response, True
+        
+        except requests.ConnectionError or requests.ConnectTimeout:
+            print("No internet connection.")
+            return None, False
     
     def post_add_measurement(self, gh_df:pd.DataFrame, print_is_requested:bool=False) -> None:
         """ Call the API to post the irradiance measurements.
@@ -112,7 +137,14 @@ class ApiRequester():
             'action': 'add_measurements',
             'measurements': str(gh_dict)
         }
-        self._send_post_request(variables)
+        response, internet_on = self._send_post_request(variables)
+
+        # TODO CHECK POST RESPONSE
+
+        if not internet_on:
+            return
+        
+        # Parser not needed, because the response is not interesting
 
         if print_is_requested:
             print('Measurements have been sent.')
@@ -130,15 +162,17 @@ class ApiRequester():
 
         variables = { # altitude, horizon, hddctin, hddctout, and cddctout are not included
             'action': 'siteadd',
-            'format': self.FORMAT,
             'name': name,
             'latitude': latitude,
             'longitude': longitude,
             'azimuth': azimuth,
             'inclination': inclination
         }
-        response = self._send_get_request(variables)
+        response, internet_on = self._send_get_request(variables)
 
+        if not internet_on:
+            return
+        
         # Extract the required information from response_dict
         response_df = self.parser.parse_site_add_response(response, function_tag=variables['action'])
 
@@ -160,7 +194,6 @@ class ApiRequester():
         
         variables = {
             'action': 'siteedit',
-            'format': self.FORMAT,
             'site_id': site_id
         }
         string = ""
@@ -205,8 +238,11 @@ class ApiRequester():
             print("Nothing to edit.")
             return
 
-        self._send_get_request(variables)
+        _, internet_on = self._send_get_request(variables)
 
+        if not internet_on:
+            return
+        
         # Parser not needed, because the response is not interesting
         
         # Edit the new site to the forecast_sites DataFrame
@@ -230,10 +266,12 @@ class ApiRequester():
         
         variables = {
             'action': 'sitedelete',
-            'format': self.FORMAT,
             'site_id': site_id
         }
-        self._send_get_request(variables)
+        _, internet_on = self._send_get_request(variables)
+        
+        if not internet_on:
+            return
 
         # Parser not needed, because the response is not interesting
 
@@ -249,11 +287,12 @@ class ApiRequester():
             Inputs:
                 print_is_requested (bool): Whether to print the result (default: True). """
         
-        variables = {
-            'action': 'siteinfo',
-            'format': self.FORMAT
-        }
-        response = self._send_get_request(variables)
+        variables = {'action': 'siteinfo'}
+
+        response, internet_on = self._send_get_request(variables)
+
+        if not internet_on:
+            return
 
         # Parse the response
         response_df, response_formatted = self.parser.parse_site_info_response(response, function_tag=variables['action'])
@@ -269,14 +308,18 @@ class ApiRequester():
             Inputs:
                 print_is_requested (bool): Whether to print the result (default: True). """
         
-        variables = {
-            'action': 'getforecast',
-            'format': self.FORMAT
-        }
-        response = self._send_get_request(variables)
+        variables = {'action': 'getforecast'}
+
+        response, internet_on = self._send_get_request(variables)
+
+        if not internet_on:
+            return
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
+        self.previous_SF_df = response_df
+        local_tz = tzlocal()
+        self.previous_SF_time = pd.Timestamp.now(tz=local_tz)
 
         if print_is_requested:
             print("Solar forecast have been retrieved.")
@@ -289,14 +332,18 @@ class ApiRequester():
             Inputs:
                 print_is_requested (bool): Whether to print the result (default: True). """
         
-        variables = {
-            'action': 'getforecast_cloudmove',
-            'format': self.FORMAT
-        }
-        response = self._send_get_request(variables)
+        variables = {'action': 'getforecast_cloudmove'}
 
+        response, internet_on = self._send_get_request(variables)
+
+        if not internet_on:
+            return
+        
         # Parse the response
         response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
+        self.previous_CM_df = response_pd
+        local_tz = tzlocal()
+        self.previous_CM_time = pd.Timestamp.now(tz=local_tz)
 
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")

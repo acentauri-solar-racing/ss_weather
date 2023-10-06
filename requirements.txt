@@ -11,3 +11,4 @@ tkinter
 geocoder
 pytz
 python-dateutil
+folium
