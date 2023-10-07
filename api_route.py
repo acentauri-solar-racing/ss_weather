@@ -1,23 +1,24 @@
 import pandas as pd
 import numpy as np
 import constants
-from scipy.spatial import KDTree
+from route import Route
 
 class ApiRoute():
-    """ Class for interacting with the route data obtained from Brouter.
+    """ Class for interacting with the route data obtained from Brouter and cut them for the api requests.
 
     Attributes:
-        route_data (pd.DataFrame): The route dataframe with latitude, longitude, and cumDistance columns. 
-        max_distance (float): The maximum distance of the route.
-        kdtree (scipy.spatial.KDTree): The k-d tree for searching. """
+        route (Route): The route class. """
     
-    def __init__(self, route_data:pd.DataFrame, print_is_requested:bool=False) -> None:
-        self.route_data = route_data
-        self.max_distance = self.route_data['cumDistance'].max()
-        self.print_is_requested = print_is_requested
+    def __init__(self, route:Route) -> None:
+        self.route = route
+        self.route_data = self.route.get_route_data
 
-        # Create k-d tree for searching
-        self.kdtree = KDTree(self.route_data[['latitude', 'longitude']].values)
+        self.api_route = pd.DataFrame()
+
+    @property
+    def get_api_route_data(self) -> pd.DataFrame:
+        """ Return the route data as a Pandas DataFrame. """
+        return self.api_route
     
     def _check_variables(self, variables:dict) -> None:
         """ Check if the variables are of the correct type and between the ranges. 
@@ -29,7 +30,7 @@ class ApiRoute():
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
             'number_sites': (int, 2, constants.MAX_SITES_NUMBER),
-            'delta_spacing': (float, 1, self.max_distance) # in meters
+            'delta_spacing': (float, 1, self.route_data['cumDistance'].max()) # in meters
         }
 
         for variable, value in variables.items():
@@ -45,26 +46,6 @@ class ApiRoute():
                             raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
-    
-    def _find_closest_point(self, position:dict, print_is_requested:bool=False) -> pd.Series:
-        """ Find the closest point in the route to the given position.
-
-            Inputs:
-                position (dict): The position with latitude and longitude keys.
-                print_is_requested (bool): Whether to print the nearest point index. """
-        
-        self._check_variables(position)
-
-        actual_coords = (position['latitude'], position['longitude'])
-
-        # Query the k-d tree to find the nearest point index
-        nearest_point_index = self.kdtree.query([actual_coords], k=1)[1][0]
-        closest_point = self.route_data.iloc[nearest_point_index]
-
-        if self.print_is_requested or print_is_requested:
-            print('Nearest point index in the csv file:', nearest_point_index + 2)
-        
-        return closest_point
 
     def cut_route_data(self, current_position:dict=None, final_position:dict=None, number_sites:int=None, delta_spacing:float=None, print_is_requested:bool=False) -> pd.DataFrame:
         """ Cut the route data given the current position, final position, number of sites, and delta spacing.
@@ -97,7 +78,7 @@ class ApiRoute():
         
         # If current position is given
         if current_position is not None:
-            closest_point = self._find_closest_point(position=current_position, print_is_requested=print_is_requested)
+            closest_point = self.route.find_closest_row(position=current_position, print_is_requested=print_is_requested)
             start_index = closest_point.name
 
             # Subtract cumulative distance
@@ -113,7 +94,7 @@ class ApiRoute():
             if delta_spacing is not None:
                 raise ValueError('The final position cannot be given with delta_spacing')
             
-            closest_point = self._find_closest_point(position=final_position, print_is_requested=print_is_requested)
+            closest_point = self.route.find_closest_row(position=final_position, print_is_requested=print_is_requested)
             end_index = closest_point.name
 
             if end_index < start_index:
@@ -201,7 +182,7 @@ class ApiRoute():
                 interpolated_values = np.interp(x, xp, fp)
                 interpolated_data[column] = interpolated_values.tolist()
         
-        if self.print_is_requested or print_is_requested:
+        if print_is_requested:
             print(interpolated_data)
 
         return interpolated_data

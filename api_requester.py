@@ -18,7 +18,7 @@ class ApiRequester():
     KEY: str = constants.KEY
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
-    TIMEOUT: int = 5
+    TIMEOUT: int = 10
 
     def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
         self.parser = parser
@@ -98,8 +98,8 @@ class ApiRequester():
             response = requests.get(url=mdx_url, timeout=self.TIMEOUT)
             return response, True
         
-        except requests.ConnectionError or requests.ConnectTimeout:
-            print("No internet connection.")
+        except (requests.ConnectionError, requests.Timeout):
+            print("No internet connection or the connection timed out.")
             return None, False
     
     def _send_post_request(self, variables:dict) -> Tuple[requests.models.Response, bool]:
