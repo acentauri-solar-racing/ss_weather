@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import constants
 import tkinter as tk
+from typing import Tuple
 from tkinter import filedialog
 from scipy.spatial import KDTree
 
@@ -94,7 +95,7 @@ class Route():
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
     
-    def find_closest_row(self, position:dict, print_is_requested:bool=False) -> pd.Series:
+    def find_closest_row(self, position:dict, print_is_requested:bool=False) -> Tuple[pd.Series, int]:
         """ Find the closest row in the route to the given position.
 
             Inputs:
@@ -113,7 +114,7 @@ class Route():
             print('Nearest index in csv file:', nearest_point_index + 2)
             print('Nearest index in dataframe:', nearest_point_index)
 
-        return closest_row
+        return closest_row, nearest_point_index
     
     def find_closest_rows(self, position_df:pd.DataFrame, print_is_requested:bool=False) -> pd.DataFrame:
         """ Find the closest rows in the route to the given positions.
@@ -122,13 +123,19 @@ class Route():
                 positions (pd.DataFrame): The positions with latitude and longitude columns.
                 print_is_requested (bool): Whether to print the nearest point index. """
         
-        return position_df.apply(lambda row: self.find_closest_row({'latitude': row['latitude'], 'longitude': row['longitude']}, print_is_requested), axis=1)
-
-    def insert_cumDistance_to_control_stops(self, choose_specific_route:bool=False) -> None:
+        closest_rows_and_indices = position_df.apply(lambda row: self.find_closest_row({'latitude': row['latitude'], 'longitude': row['longitude']}, print_is_requested), axis=1)
+        closest_rows_df = pd.DataFrame(closest_rows_and_indices.tolist(), columns=['closest_row', 'index'])
+        return closest_rows_df
+    
+    def insert_to_control_stops(self, choose_specific_route:bool=False) -> None:
         """ Insert the cumDistance column to the control stops data. """
 
-        self.control_stops_df['cumDistance'] = self.find_closest_rows(self.control_stops_df[['latitude', 'longitude']])['cumDistance'].values
-        
+        closest_rows_df = self.find_closest_rows(self.control_stops_df[['latitude', 'longitude']])
+        print(closest_rows_df['index'].values)
+        self.control_stops_df['cumDistance'] = closest_rows_df['closest_row'].apply(lambda x: x['cumDistance']).values
+        self.control_stops_df['dfIndex'] = closest_rows_df['index'].values
+        self.control_stops_df['csvIndex'] = closest_rows_df['index'].values + 2
+            
         if choose_specific_route:
             # Save the control stops data to a specific file
             root = tk.Tk()

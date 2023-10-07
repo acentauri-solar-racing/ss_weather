@@ -79,7 +79,7 @@ class ApiRoute():
         # If current position is given
         if current_position is not None:
             closest_point = self.route.find_closest_row(position=current_position, print_is_requested=print_is_requested)
-            start_index = closest_point.name
+            start_index = closest_point[1]
 
             # Subtract cumulative distance
             start_distance = cut_data.iloc[start_index]['cumDistance']
@@ -95,7 +95,7 @@ class ApiRoute():
                 raise ValueError('The final position cannot be given with delta_spacing')
             
             closest_point = self.route.find_closest_row(position=final_position, print_is_requested=print_is_requested)
-            end_index = closest_point.name
+            end_index = closest_point[1]
 
             if end_index < start_index:
                 raise ValueError('The final position cannot be before the start position')

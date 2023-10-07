@@ -92,48 +92,49 @@ class Plotter():
     #     popup="Current Location"
     # ).add_to(map_obj)
 
-    def _recursive_position_finder(self, current_cumDistance:float, driving_time:float, control_stop_to_skip:int) -> pd.Series:
+    def _recursive_position_finder(self, current_cumDistance:float, driving_time:float, cs_to_skip:int) -> pd.Series:
         """ """
         # Cut data at current position (lower cut)
-        cut_data = self.route_data[self.route_data['cumDistance'].copy() >= current_cumDistance]
+        cut_data = self.route_data.copy()
+
+        cut_data = cut_data[cut_data['cumDistance'] >= current_cumDistance]
         cut_data = cut_data.reset_index(drop=True)
-        print(cut_data)
-        print(1)
+
         current_time = cut_data['cumTimeAtMaxSpeed'][0]
 
         # Cut data at driving time (upper cut)
-        cut_data = cut_data['cumTimeAtMaxSpeed'] <= current_time + driving_time
-        print(2)
-        max_cumDistance = cut_data['cumDistance']
-        print(max_cumDistance)
+        cut_data = cut_data[cut_data['cumTimeAtMaxSpeed'] <= current_time + driving_time]
+        max_cumDistance = cut_data['cumDistance'].max()
 
         # Check if the control stop dataframe is not empty
-        control_stops_in_range = 0
         if not self.control_stops.empty:
-            # Count number of control stop in range of cut data
-            control_stops_in_range = self.control_stops['cumDistance'] >= current_cumDistance & (self.control_stops['cumDistance'] <= max_cumDistance)
+            cs_in_range_mask = (self.control_stops['cumDistance'] >= current_cumDistance) & (self.control_stops['cumDistance'] <= max_cumDistance)
+            cs_in_range = cs_in_range_mask.sum()
+            print(f'cs found ahead: {cs_in_range}')
+            print(f'cs to skip: {cs_to_skip}')
         else:
             print("No control stop dataframe given")
 
-        print(3)
         # Stop cases
         # Reach end of route, return last point
         if current_cumDistance >= self.route_data.iloc[-1]['cumDistance']:
-            return self.route_data.iloc[-1]
-            # return self.end_position
+            return self.route_data.iloc[-1] # return self.end_position
         
         # All control stops considered
-        if control_stop_to_skip == control_stop_to_skip:
+        if cs_to_skip == cs_in_range:
+            print("All control stops considered")
             return self.route_data.loc[self.route_data['cumDistance'] == max_cumDistance].iloc[0]
         
         # Stop at control stop for the night, meaning we arrive at cs between 16:30 and 17:00
-        if control_stop_to_skip > control_stops_in_range:
-            return self.control_stops.loc[self.control_stops['cumDistance'] > max_cumDistance].iloc[0]
-
+        if cs_to_skip > cs_in_range:
+            print("Stop at control stop for the night")
+            return self.control_stops.loc[self.control_stops['cumDistance'] > current_cumDistance].iloc[cs_to_skip - 1]
+        
 
         # Recursive call to skip control stop and reduce driving time by 30 minutes
-        if control_stop_to_skip < control_stops_in_range: # Case of 0 cs in range considered
-            return self._recursive_position_finder(current_cumDistance, driving_time - 30.0*60.0, control_stop_to_skip + 1)
+        if cs_to_skip < cs_in_range: # Case of 0 cs in range considered
+            print("--- Recursive call ---")
+            return self._recursive_position_finder(current_cumDistance, driving_time - 30.0*60.0, cs_to_skip + 1)
 
         
     def update_max_speed_distance(self, current_position:dict) -> float:
@@ -141,9 +142,9 @@ class Plotter():
         # Subtract overnight stop start time to now
         now = pd.Timestamp.now()
         driving_time = pd.Timedelta(hours=17) - pd.Timedelta(hours=now.hour, minutes=now.minute)
-        current_cumDistance = self.route.find_closest_row(current_position, print_is_requested=True)['cumDistance']
+        current_cumDistance = self.route.find_closest_row(current_position, print_is_requested=False)[0]['cumDistance']
 
-        position_series = self._recursive_position_finder(current_cumDistance, driving_time.total_seconds(), control_stop_to_skip=0)
+        position_series = self._recursive_position_finder(current_cumDistance, driving_time.total_seconds(), cs_to_skip=0)
 
         folium.CircleMarker(
             location=[position_series['latitude'], position_series['longitude']],
@@ -152,7 +153,7 @@ class Plotter():
             fill=True,
             fill_color="red",
             fill_opacity=1,
-            popup="You"
+            popup="Max speed distance"
         ).add_to(self.map)
         
         return position_series['cumDistance'] - current_cumDistance
