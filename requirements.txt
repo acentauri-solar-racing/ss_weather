@@ -12,3 +12,5 @@ geocoder
 pytz
 python-dateutil
 folium
+matplotlib
+dash-leaflet

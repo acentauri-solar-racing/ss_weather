@@ -17,8 +17,8 @@ class Plotter():
         max_lat = self.route_data['latitude'].max()
 
         # Create a base map centered around the midle of the route
-        middle_lat = (max_lat - min_lat) / 2
-        middle_lng = (max_lng - min_lng) / 2
+        middle_lat = (max_lat + min_lat) / 2
+        middle_lng = (max_lng + min_lng) / 2
         self.map = folium.Map(
                         location=[middle_lat, middle_lng],
                         zoom_start=0
@@ -135,7 +135,6 @@ class Plotter():
         if cs_to_skip < cs_in_range: # Case of 0 cs in range considered
             print("--- Recursive call ---")
             return self._recursive_position_finder(current_cumDistance, driving_time - 30.0*60.0, cs_to_skip + 1)
-
         
     def update_max_speed_distance(self, current_position:dict) -> float:
         """ """
@@ -146,14 +145,15 @@ class Plotter():
 
         position_series = self._recursive_position_finder(current_cumDistance, driving_time.total_seconds(), cs_to_skip=0)
 
-        folium.CircleMarker(
+        folium.RegularPolygonMarker(
             location=[position_series['latitude'], position_series['longitude']],
-            radius=3,
+            number_of_sides=3,
+            radius=5,
             color="red",
             fill=True,
             fill_color="red",
             fill_opacity=1,
             popup="Max speed distance"
         ).add_to(self.map)
-        
+
         return position_series['cumDistance'] - current_cumDistance

@@ -133,7 +133,7 @@ class ApiExecuter():
         """ """
         new_forecast_df = self.requester.get_solar_forecast()
 
-        if new_forecast_df.loc[0,1] == self.requester.previous_SF_df.loc[0,1]:
+        if new_forecast_df.iloc[:2].equals(self.requester.previous_SF_df.iloc[:2]):
             new_forecast_arrived = False
             new_forecast_df = None
             print("No new SF forecast")
@@ -147,7 +147,7 @@ class ApiExecuter():
         """ """
         new_forecast_df = self.requester.get_solar_forecast_cloudmove()
 
-        if new_forecast_df.loc[0,1] == self.requester.previous_CM_df.loc[0,1]:
+        if new_forecast_df.iloc[:2].equals(self.requester.previous_CM_df.iloc[:2]):
             new_forecast_arrived = False
             new_forecast_df = None
             print("No new CM forecast")
