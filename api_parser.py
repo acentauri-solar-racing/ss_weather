@@ -130,7 +130,7 @@ class ApiParser():
         if not sites_data:
             print(f'Response from {function_tag} is empty.')
             return pd.DataFrame()
-
+            
         data_to_concat = [
             {
                 'site_id': int(site_id),
@@ -141,6 +141,10 @@ class ApiParser():
             }
             for site_id, site_forecast in sites_data.items()
             for time, time_forecast in site_forecast.items()
+            # if print(site_id, "Original Time:", time, "Localized Time:", 
+            #         (pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S')
+            #         .tz_localize('UTC')
+            #         .astimezone(pytz.FixedOffset(forecast_sites.loc[int(site_id), 'UTC_offset'].total_seconds() / 60))).strftime('%Y-%m-%d %H:%M:%S%z')) or True
         ]
 
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id', 'time'])
