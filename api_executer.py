@@ -135,7 +135,6 @@ class ApiExecuter():
 
         if new_forecast_df.iloc[:2].equals(self.requester.previous_SF_df.iloc[:2]):
             new_forecast_arrived = False
-            new_forecast_df = None
             print("No new SF forecast")
         else:
             new_forecast_arrived = True
@@ -149,7 +148,6 @@ class ApiExecuter():
 
         if new_forecast_df.iloc[:2].equals(self.requester.previous_CM_df.iloc[:2]):
             new_forecast_arrived = False
-            new_forecast_df = None
             print("No new CM forecast")
         else:
             new_forecast_arrived = True

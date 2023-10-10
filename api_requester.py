@@ -301,6 +301,11 @@ class ApiRequester():
             print(f"Site information have been retrieved: \n {response_formatted}")
 
         return response_df
+    
+    @property
+    def get_solar_forecast_last_time(self) -> pd.Timestamp:
+        """ Return the time of the last solar forecast. """
+        return self.previous_SF_time
 
     def get_solar_forecast(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the solar forecast for the next 72 hours.
@@ -325,6 +330,11 @@ class ApiRequester():
             print("Solar forecast have been retrieved.")
 
         return response_df
+    
+    @property
+    def get_solar_forecast_cloudmove_last_time(self) -> pd.Timestamp:
+        """ Return the time of the last CloudMove solar forecast. """
+        return self.previous_CM_time
 
     def get_solar_forecast_cloudmove(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the CloudMove forecast for the next 6 hours.
