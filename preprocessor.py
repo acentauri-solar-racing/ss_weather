@@ -186,6 +186,9 @@ class Preprocessor():
         self.route_df = route_df
         self.sites_df = sites_df
 
+        if raw_forecast_df.empty:
+            raise ValueError('The forecast dataframe is empty')
+
         self.forecast_df = self._data_restructure(raw_forecast_df)
 
         # Restructure and correct the data for Dynamic Programming and Model Predictive Control

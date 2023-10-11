@@ -24,10 +24,10 @@ class ApiRequester():
         self.parser = parser
         self.forecast_sites = self.get_site_info()
 
-        self.previous_SF_df: pd.DataFrame() = None
-        self.previous_SF_time: pd.Timestamp() = None
-        self.previous_CM_df: pd.DataFrame() = None
-        self.previous_CM_time: pd.Timestamp() = None
+        self.previous_SF_df = pd.DataFrame()
+        self.previous_SF_time: pd.Timestamp = pd.NaT
+        self.previous_CM_df = pd.DataFrame()
+        self.previous_CM_time: pd.Timestamp = pd.NaT
 
         if print_is_requested:
             print("Current sites' info has been retrieved:")
@@ -322,10 +322,13 @@ class ApiRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        self.previous_SF_df = response_df
+        
         local_tz = tzlocal()
         self.previous_SF_time = pd.Timestamp.now(tz=local_tz)
-
+        
+        if not response_df.empty:
+            self.previous_SF_df = response_df
+        
         if print_is_requested:
             print("Solar forecast have been retrieved.")
 
@@ -350,12 +353,15 @@ class ApiRequester():
             return
         
         # Parse the response
-        response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        self.previous_CM_df = response_pd
+        response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
+        
         local_tz = tzlocal()
         self.previous_CM_time = pd.Timestamp.now(tz=local_tz)
+
+        if not response_df.empty:
+            self.previous_CM_df = response_df
 
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
 
-        return response_pd
+        return response_df

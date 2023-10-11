@@ -129,28 +129,58 @@ class ApiExecuter():
         if self.print_is_requested or print_is_requested:
             print(f"All sites have been deleted: \n {self.requester.forecast_sites}")
 
-    def get_new_solar_forecast(self) -> Tuple[pd.DataFrame, bool]:
-        """ """
-        new_forecast_df = self.requester.get_solar_forecast()
-
-        if new_forecast_df.iloc[:2].equals(self.requester.previous_SF_df.iloc[:2]):
+    def _new_forecasts_arrived(self, old_forecast_df:pd.DataFrame, new_forecast_df:pd.DataFrame, forecast_type:str) -> bool:
+        """ Check if the new forecast is different from the previous one.
+        
+            Inputs:
+                old_forecast_df (pd.DataFrame): The previous forecast dataframe.
+                new_forecast_df (pd.DataFrame): The new forecast dataframe.
+                type (str): The type of forecast. """
+        
+        # Check that the forecast type is correct
+        if "SF" not in forecast_type and "CM" not in forecast_type:
+            raise ValueError(f"The type has to be 'SF' or 'CM'. Received: {forecast_type}")
+        
+        # Check for empty dataframes
+        if new_forecast_df.empty:
             new_forecast_arrived = False
-            print("No new SF forecast")
+
+        elif old_forecast_df.empty:
+            new_forecast_arrived = True
+            print(f"New {forecast_type} forecast arrived")
+
+        # Check first rows
+        elif new_forecast_df.head().equals(old_forecast_df.head()):
+            new_forecast_arrived = False
+            print(f"No new {forecast_type} forecast")
+
         else:
             new_forecast_arrived = True
-            print("New SF forecast arrived")
+            print(f"New {forecast_type} forecast arrived")
         
-        return new_forecast_df, new_forecast_arrived
-    
-    def get_new_solar_forecast_cloudmove(self) -> Tuple[pd.DataFrame, bool]:
-        """ """
-        new_forecast_df = self.requester.get_solar_forecast_cloudmove()
+        return new_forecast_arrived
 
-        if new_forecast_df.iloc[:2].equals(self.requester.previous_CM_df.iloc[:2]):
-            new_forecast_arrived = False
-            print("No new CM forecast")
-        else:
-            new_forecast_arrived = True
-            print("New CM forecast arrived")
+    def get_new_forecasts(self) -> Tuple[pd.DataFrame, bool, pd.DataFrame, bool]:
+        """ Get the new solar forecast and cloudmove forecast.
         
-        return new_forecast_df, new_forecast_arrived
+            Returns:
+                new_SF_forecast_df (pd.DataFrame): The new solar forecast dataframe.
+                SF_arrived (bool): Whether the new solar forecast arrived.
+                new_CM_forecast_df (pd.DataFrame): The new cloudmove forecast dataframe.
+                CM_arrived (bool): Whether the new cloudmove forecast arrived."""
+        
+        old_CM_forecast_df = self.requester.previous_CM_df
+        new_CM_forecast_df = self.requester.get_solar_forecast_cloudmove()
+        CM_arrived = self._new_forecasts_arrived(old_CM_forecast_df, new_CM_forecast_df, "CM")
+
+        if not CM_arrived:
+            new_CM_forecast_df = pd.DataFrame()
+
+        old_SF_forecast_df = self.requester.previous_SF_df
+        new_SF_forecast_df = self.requester.get_solar_forecast()
+        SF_arrived = self._new_forecasts_arrived(old_SF_forecast_df, new_SF_forecast_df, "SF")
+
+        if not SF_arrived:
+            new_SF_forecast_df = pd.DataFrame()
+
+        return new_SF_forecast_df, SF_arrived, new_CM_forecast_df, CM_arrived
