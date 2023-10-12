@@ -29,7 +29,7 @@ class ApiRoute():
         validation_rules = {
             'latitude': (float, -90.0, 90.0),
             'longitude': (float, -180.0, 180.0),
-            'number_sites': (int, 2, constants.MAX_SITES_NUMBER),
+            'number_sites': (int, 2, constants.MAX_SITES_NUMBER_METEOTEST),
             'delta_spacing': (float, 1, self.route_data['cumDistance'].max()) # in meters
         }
 

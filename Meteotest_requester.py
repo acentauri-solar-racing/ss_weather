@@ -9,13 +9,14 @@ class ApiRequester():
     """ Class for interacting with the weather forecast API from Meteotest.
 
     Attributes:
-        api_website (str): The base API URL.
+        website (str): The base API URL.
         key (str): The API key for authentication.
         service (str): The service to be used.
-        format (str): The response format (default: 'json'). """
+        format (str): The response format (default: 'json').
+        timeout (int): The timeout for the request (default: 10)."""
         
-    API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1'
-    KEY: str = constants.KEY
+    WEBSITE: str = 'https://mdx.meteotest.ch/api_v1'
+    KEY: str = constants.KEY_METEOTEST
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
     TIMEOUT: int = 10
@@ -90,7 +91,7 @@ class ApiRequester():
 
         self._check_variables(variables)
 
-        mdx_url = f'{self.API_WEBSITE}?key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
+        mdx_url = f'{self.WEBSITE}?key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
 
@@ -109,7 +110,7 @@ class ApiRequester():
             variables (dict): The variables to be sent to the API. """
         
         try:
-            response = requests.post(url=self.API_WEBSITE, data=variables, timeout=self.TIMEOUT)
+            response = requests.post(url=self.WEBSITE, data=variables, timeout=self.TIMEOUT)
             return response, True
         
         except requests.ConnectionError or requests.ConnectTimeout:
