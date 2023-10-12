@@ -3,7 +3,7 @@ import numpy as np
 import constants
 from route import Route
 
-class ApiRoute():
+class RouteAPI():
     """ Class for interacting with the route data obtained from Brouter and cut them for the api requests.
 
     Attributes:

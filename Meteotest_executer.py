@@ -1,14 +1,14 @@
 import pandas as pd
 from typing import Tuple
-from api_requester import ApiRequester
+from Meteotest_requester import MeteotestRequester
 
-class ApiExecuter():
+class MeteotestExecuter():
     """ Class for calling multiple times requester functions.
 
     Attributes:
         requester (ApiRequester): The requester object. """
 
-    def __init__(self, requester:ApiRequester, print_is_requested:bool=False) -> None:
+    def __init__(self, requester:MeteotestRequester, print_is_requested:bool=False) -> None:
         self.requester = requester
         self.print_is_requested = print_is_requested
 

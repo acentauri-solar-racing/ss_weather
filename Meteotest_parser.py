@@ -5,7 +5,7 @@ import pandas as pd
 from typing import Tuple
 from bs4 import BeautifulSoup
 
-class ApiParser():
+class MeteotestParser():
     """ Class for parsing the API responses. """
 
     def __init__(self) -> None:

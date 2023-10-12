@@ -3,9 +3,9 @@ import constants
 import pandas as pd
 from typing import Tuple
 from dateutil.tz import tzlocal
-from api_parser import ApiParser
+from Meteotest_parser import MeteotestParser
 
-class ApiRequester():
+class MeteotestRequester():
     """ Class for interacting with the weather forecast API from Meteotest.
 
     Attributes:
@@ -21,7 +21,7 @@ class ApiRequester():
     FORMAT: str = 'json'
     TIMEOUT: int = 10
 
-    def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
+    def __init__(self, parser:MeteotestParser, print_is_requested:bool=False) -> None:
         self.parser = parser
         self.forecast_sites = self.get_site_info()
 
