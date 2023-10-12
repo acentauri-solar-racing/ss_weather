@@ -1,25 +1,30 @@
 import folium
 import pandas as pd
+from route import Route
 
 class Plotter():
     """ """
-    def __init__(self, route_data) -> None:
-        self.route_data = route_data
-        self.control_stops = pd.DataFrame()
+    def __init__(self, route:Route) -> None:
+        self.route = route
+        self.route_data = self.route.get_route_data
+        self.control_stops = pd.DataFrame() # Consider possibility of not having control stops
+        self.start_position = None
+        self.end_position = None
 
-        # Create a base map centered around Australia
-        middle_lat = (max_lat - min_lat) / 2
-        middle_lng = (max_lng - min_lng) / 2
+        min_lng = self.route_data['longitude'].min()
+        min_lat = self.route_data['latitude'].min()
+        max_lng = self.route_data['longitude'].max()
+        max_lat = self.route_data['latitude'].max()
+
+        # Create a base map centered around the midle of the route
+        middle_lat = (max_lat + min_lat) / 2
+        middle_lng = (max_lng + min_lng) / 2
         self.map = folium.Map(
                         location=[middle_lat, middle_lng],
                         zoom_start=0
                     )
 
         # Define the bounds
-        min_lng = self.route_data['longitude'].min()
-        min_lat = self.route_data['latitude'].min()
-        max_lng = self.route_data['longitude'].max()
-        max_lat = self.route_data['latitude'].max()
         bounds = [[max_lat, min_lng], [min_lat, max_lng]]
         self.map.fit_bounds(bounds)
 
@@ -39,7 +44,7 @@ class Plotter():
         """ """
         return self.map
     
-    def add_weather_sites(self, api_sites:pd.DataFrame) -> None:
+    def add_api_sites(self, api_sites:pd.DataFrame) -> None:
         """ """
         for _, row in api_sites.iterrows():
             folium.CircleMarker(
@@ -54,7 +59,10 @@ class Plotter():
     
     def add_control_stops(self, control_stops_df:pd.DataFrame) -> None:
         """ """
-        self.control_stops = control_stops_df
+        # Save control stops dataframe without first and last row
+        self.control_stops = control_stops_df.iloc[1:-1]
+        self.start_position = control_stops_df.iloc[0]
+        self.end_position = control_stops_df.iloc[-1]
 
         for _, row in control_stops_df.iterrows():
             folium.CircleMarker(
@@ -64,10 +72,10 @@ class Plotter():
                 fill=True,
                 fill_color="orange",
                 fill_opacity=1,
-                tooltip=row['location']
+                tooltip=row['town'] + ': ' + row['location']
             ).add_to(self.map)
 
-    def add_current_position(self, current_position) -> None:
+    def add_current_position(self, current_position:dict) -> None:
         """ """
         folium.Marker(
                 location=[current_position['latitude'], current_position['longitude']],
@@ -84,34 +92,68 @@ class Plotter():
     #     popup="Current Location"
     # ).add_to(map_obj)
 
-    def _recursive_index_finder(self, driving_time:float, control_stop_to_skip:int) -> int:
+    def _recursive_position_finder(self, current_cumDistance:float, driving_time:float, cs_to_skip:int) -> pd.Series:
         """ """
-        
-        # Stop case
+        # Cut data at current position (lower cut)
+        cut_data = self.route_data.copy()
 
+        cut_data = cut_data[cut_data['cumDistance'] >= current_cumDistance]
+        cut_data = cut_data.reset_index(drop=True)
+
+        current_time = cut_data['cumTimeAtMaxSpeed'][0]
+
+        # Cut data at driving time (upper cut)
+        cut_data = cut_data[cut_data['cumTimeAtMaxSpeed'] <= current_time + driving_time]
+        max_cumDistance = cut_data['cumDistance'].max()
+
+        # Check if the control stop dataframe is not empty
+        if not self.control_stops.empty:
+            cs_in_range_mask = (self.control_stops['cumDistance'] >= current_cumDistance) & (self.control_stops['cumDistance'] <= max_cumDistance)
+            cs_in_range = cs_in_range_mask.sum()
+            print(f'cs found ahead: {cs_in_range}')
+            print(f'cs to skip: {cs_to_skip}')
+        else:
+            print("No control stop dataframe given")
+
+        # Stop cases
+        # Reach end of route, return last point
+        if current_cumDistance >= self.route_data.iloc[-1]['cumDistance']:
+            return self.route_data.iloc[-1] # return self.end_position
         
-    def update_max_speed_distance(self) -> float:
+        # All control stops considered
+        if cs_to_skip == cs_in_range:
+            print("All control stops considered")
+            return self.route_data.loc[self.route_data['cumDistance'] == max_cumDistance].iloc[0]
+        
+        # Stop at control stop for the night, meaning we arrive at cs between 16:30 and 17:00
+        if cs_to_skip > cs_in_range:
+            print("Stop at control stop for the night")
+            return self.control_stops.loc[self.control_stops['cumDistance'] > current_cumDistance].iloc[cs_to_skip - 1]
+        
+
+        # Recursive call to skip control stop and reduce driving time by 30 minutes
+        if cs_to_skip < cs_in_range: # Case of 0 cs in range considered
+            print("--- Recursive call ---")
+            return self._recursive_position_finder(current_cumDistance, driving_time - 30.0*60.0, cs_to_skip + 1)
+        
+    def update_max_speed_distance(self, current_position:dict) -> float:
         """ """
-        #TODO considerare fine della gara per cui non ha senso pensare al os: se idx supera limite dare fine gara e print
-        #TODO nella ricerca togliere partenza e arrivo per la ricerca di cs
-        #TODO sapendo che cs dura 30 min, non togliere 30 min se mancano 30 min alle 17, ma si rimane nel cs
-
         # Subtract overnight stop start time to now
         now = pd.Timestamp.now()
         driving_time = pd.Timedelta(hours=17) - pd.Timedelta(hours=now.hour, minutes=now.minute)
+        current_cumDistance = self.route.find_closest_row(current_position, print_is_requested=False)[0]['cumDistance']
 
-        
-        idx_lat = self.route_data.iloc[idx]['latitude']
-        idx_lng = self.route_data.iloc[idx]['longitude']
+        position_series = self._recursive_position_finder(current_cumDistance, driving_time.total_seconds(), cs_to_skip=0)
 
-        folium.CircleMarker(
-                location=[idx_lat, idx_lng],
-                radius=3,
-                color="red",
-                fill=True,
-                fill_color="red",
-                fill_opacity=1,
-                popup="You"
-            ).add_to(self.map)
-        
-        return distance_left
+        folium.RegularPolygonMarker(
+            location=[position_series['latitude'], position_series['longitude']],
+            number_of_sides=3,
+            radius=5,
+            color="red",
+            fill=True,
+            fill_color="red",
+            fill_opacity=1,
+            popup="Max speed distance"
+        ).add_to(self.map)
+
+        return position_series['cumDistance'] - current_cumDistance

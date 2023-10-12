@@ -9,25 +9,26 @@ class ApiRequester():
     """ Class for interacting with the weather forecast API from Meteotest.
 
     Attributes:
-        api_website (str): The base API URL.
+        website (str): The base API URL.
         key (str): The API key for authentication.
         service (str): The service to be used.
-        format (str): The response format (default: 'json'). """
+        format (str): The response format (default: 'json').
+        timeout (int): The timeout for the request (default: 10)."""
         
-    API_WEBSITE: str = 'https://mdx.meteotest.ch/api_v1'
-    KEY: str = constants.KEY
+    WEBSITE: str = 'https://mdx.meteotest.ch/api_v1'
+    KEY: str = constants.KEY_METEOTEST
     SERVICE: str = 'solarforecast'
     FORMAT: str = 'json'
-    TIMEOUT: int = 5
+    TIMEOUT: int = 10
 
     def __init__(self, parser:ApiParser, print_is_requested:bool=False) -> None:
         self.parser = parser
         self.forecast_sites = self.get_site_info()
 
-        self.previous_SF_df: pd.DataFrame() = None
-        self.previous_SF_time: pd.Timestamp() = None
-        self.previous_CM_df: pd.DataFrame() = None
-        self.previous_CM_time: pd.Timestamp() = None
+        self.previous_SF_df = pd.DataFrame()
+        self.previous_SF_time: pd.Timestamp = pd.NaT
+        self.previous_CM_df = pd.DataFrame()
+        self.previous_CM_time: pd.Timestamp = pd.NaT
 
         if print_is_requested:
             print("Current sites' info has been retrieved:")
@@ -90,7 +91,7 @@ class ApiRequester():
 
         self._check_variables(variables)
 
-        mdx_url = f'{self.API_WEBSITE}?key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
+        mdx_url = f'{self.WEBSITE}?key={self.KEY}&service={self.SERVICE}&format={self.FORMAT}'
         for key, value in variables.items():
             mdx_url += f'&{key}={value}'
 
@@ -98,8 +99,8 @@ class ApiRequester():
             response = requests.get(url=mdx_url, timeout=self.TIMEOUT)
             return response, True
         
-        except requests.ConnectionError or requests.ConnectTimeout:
-            print("No internet connection.")
+        except (requests.ConnectionError, requests.Timeout):
+            print("No internet connection or the connection timed out.")
             return None, False
     
     def _send_post_request(self, variables:dict) -> Tuple[requests.models.Response, bool]:
@@ -109,7 +110,7 @@ class ApiRequester():
             variables (dict): The variables to be sent to the API. """
         
         try:
-            response = requests.post(url=self.API_WEBSITE, data=variables, timeout=self.TIMEOUT)
+            response = requests.post(url=self.WEBSITE, data=variables, timeout=self.TIMEOUT)
             return response, True
         
         except requests.ConnectionError or requests.ConnectTimeout:
@@ -301,6 +302,11 @@ class ApiRequester():
             print(f"Site information have been retrieved: \n {response_formatted}")
 
         return response_df
+    
+    @property
+    def get_solar_forecast_last_time(self) -> pd.Timestamp:
+        """ Return the time of the last solar forecast. """
+        return self.previous_SF_time
 
     def get_solar_forecast(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the solar forecast for the next 72 hours.
@@ -317,14 +323,22 @@ class ApiRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        self.previous_SF_df = response_df
+        
         local_tz = tzlocal()
         self.previous_SF_time = pd.Timestamp.now(tz=local_tz)
-
+        
+        if not response_df.empty:
+            self.previous_SF_df = response_df
+        
         if print_is_requested:
             print("Solar forecast have been retrieved.")
 
         return response_df
+    
+    @property
+    def get_solar_forecast_cloudmove_last_time(self) -> pd.Timestamp:
+        """ Return the time of the last CloudMove solar forecast. """
+        return self.previous_CM_time
 
     def get_solar_forecast_cloudmove(self, print_is_requested:bool=False) -> pd.DataFrame:
         """ Call the API to get the CloudMove forecast for the next 6 hours.
@@ -340,12 +354,15 @@ class ApiRequester():
             return
         
         # Parse the response
-        response_pd = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        self.previous_CM_df = response_pd
+        response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
+        
         local_tz = tzlocal()
         self.previous_CM_time = pd.Timestamp.now(tz=local_tz)
+
+        if not response_df.empty:
+            self.previous_CM_df = response_df
 
         if print_is_requested:
             print("Solar forecast CloudMove have been retrieved.")
 
-        return response_pd
+        return response_df

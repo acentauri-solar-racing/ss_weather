@@ -1,8 +1,10 @@
 ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
 CONTROL_STOPS = '..\\ss_offline_data\\route\\BWSC\\control_stops.csv'
-MAX_SITES_NUMBER = 150
-KEY = '6C985B9DF101FF63EB494A0FF420FCA6'
-FORECAST_PARAMETERS = {
+MAX_SITES_NUMBER_METEOTEST = 150
+MAX_SITES_NUMBER_SOLCAST = 1500
+KEY_METEOTEST = '6C985B9DF101FF63EB494A0FF420FCA6'
+KEY_SOLCAST = '8nlT1zxKs9TFihx0V54jmkpnMjnVyTcD'
+FORECAST_PARAMETERS_METEOTEST = {
     'tt':   {'unit': '°C',     'description': 'Air Temperature'},
     'gh':   {'unit': 'W/m2',   'description': 'Global radiation on the horizontal plane'},
     'dh':   {'unit': 'W/m2',   'description': 'Diffuse radiation on the horizontal plane'},

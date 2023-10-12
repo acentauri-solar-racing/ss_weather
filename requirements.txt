@@ -12,3 +12,7 @@ geocoder
 pytz
 python-dateutil
 folium
+matplotlib
+dash-leaflet
+jupyter-dash
+solcast
