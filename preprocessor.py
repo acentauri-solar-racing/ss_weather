@@ -115,11 +115,14 @@ class Preprocessor():
         """ Correct the wind speed and gust forecast at 10 meters to the wind speed at 0.5 meters in m/s.
             Equation taken from:
             https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh. """
-
-        self.preprocess_df.rename(columns={'ff': 'windSpeed', 'fx': 'windGust'}, inplace=True)
-
-        self.preprocess_df[['windSpeed', 'windGust']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
-
+        
+        if 'fx' in self.preprocess_df.columns:
+            self.preprocess_df.rename(columns={'ff': 'windSpeed', 'fx': 'windGust'}, inplace=True)
+            self.preprocess_df[['windSpeed', 'windGust']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
+        else:
+            self.preprocess_df.rename(columns={'ff': 'windSpeed'}, inplace=True)
+            self.preprocess_df[['windSpeed']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
+        
         self._print(f'Wind log correction applied.')
 
     def _wind_decomposition(self) -> None:
@@ -192,7 +195,7 @@ class Preprocessor():
 
         # Restructure and correct the data for Dynamic Programming and Model Predictive Control
         # Distinguish between the forecast products
-        if 'fx' in self.forecast_df.columns:
+        if 'fx' in raw_forecast_df.columns:
             # SolarForecast
             self.forecast_df = self._data_restructure(raw_forecast_df)
 
@@ -207,7 +210,7 @@ class Preprocessor():
 
             self.forecast_product = 'SF'
         
-        elif 'ff' not in self.forecast_df.columns:
+        elif not 'ff' in raw_forecast_df.columns:
             # CloudMove
             self.forecast_df = self._data_restructure(raw_forecast_df)
             
@@ -221,6 +224,9 @@ class Preprocessor():
         
         else:
             # Solcast
+            # Data restructure needed
+            self.forecast_df = raw_forecast_df.copy()
+
             column_name = ['tt', 'gh', 'rh', 'ff', 'dd']
             self.preprocess_df = self.forecast_df[column_name].copy()
 
