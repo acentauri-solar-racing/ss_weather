@@ -110,8 +110,11 @@ class MeteotestExecuter():
 
         self._check_sites_id(to_delete_df.index.tolist())
 
+        
         for site_id in to_delete_df.index:
             self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
+        
+        # to_delete_df.apply(lambda row: self.requester.get_site_delete(row.name, print_is_requested=print_is_requested), axis=1)
 
         if self.print_is_requested or print_is_requested:
             print(f"Requested sites have been deleted: \n {self.requester.forecast_sites}")
@@ -125,6 +128,8 @@ class MeteotestExecuter():
         sites_id_list = self.get_all_site_id
         for site_id in sites_id_list:
             self.requester.get_site_delete(site_id, print_is_requested=print_is_requested)
+
+        # sites_id_list.apply(lambda site_id: self.requester.get_site_delete(site_id, print_is_requested=print_is_requested))
         
         if self.print_is_requested or print_is_requested:
             print(f"All sites have been deleted: \n {self.requester.forecast_sites}")

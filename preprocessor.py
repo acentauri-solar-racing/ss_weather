@@ -24,7 +24,8 @@ class Preprocessor():
     
     def __init__(self, wind_height:float=0.5, print_is_requested:bool=False) -> None:
         self.print_is_requested = print_is_requested
-        self.last_save_directory:str = ''
+        self.last_save_directory: str = ''
+        self.forecast_product: str = ''
 
         self.route_df = pd.DataFrame()
         self.sites_df = pd.DataFrame()
@@ -189,20 +190,12 @@ class Preprocessor():
         if raw_forecast_df.empty:
             raise ValueError('The forecast dataframe is empty')
 
-        self.forecast_df = self._data_restructure(raw_forecast_df)
-
         # Restructure and correct the data for Dynamic Programming and Model Predictive Control
-        # Distinguish between the two forecast products
-        if len(self.forecast_df.columns) < 10:
-            # CloudMove
-            column_name = ['tt', 'gh']
-            self.preprocess_df = self.forecast_df[column_name].copy()
-
-            self._data_cut_time(hours_in_advance)
-            self._temperature_correction()
-
-        else:
+        # Distinguish between the forecast products
+        if 'fx' in self.forecast_df.columns:
             # SolarForecast
+            self.forecast_df = self._data_restructure(raw_forecast_df)
+
             column_name = ['tt', 'gh', 'rh', 'ff', 'dd', 'fx']
             self.preprocess_df = self.forecast_df[column_name].copy()
 
@@ -211,6 +204,33 @@ class Preprocessor():
             self._wind_log_correction()
             self._wind_decomposition()
             self._air_density_estimation()
+
+            self.forecast_product = 'SF'
+        
+        elif 'ff' not in self.forecast_df.columns:
+            # CloudMove
+            self.forecast_df = self._data_restructure(raw_forecast_df)
+            
+            column_name = ['tt', 'gh']
+            self.preprocess_df = self.forecast_df[column_name].copy()
+
+            self._data_cut_time(hours_in_advance)
+            self._temperature_correction()
+
+            self.forecast_product = 'CM'
+        
+        else:
+            # Solcast
+            column_name = ['tt', 'gh', 'rh', 'ff', 'dd']
+            self.preprocess_df = self.forecast_df[column_name].copy()
+
+            self._data_cut_time(hours_in_advance)
+            self._temperature_correction()
+            self._wind_log_correction()
+            self._wind_decomposition()
+            self._air_density_estimation()
+
+            self.forecast_product = 'SC'
 
         # Rename global irradiance column
         self.preprocess_df.rename(columns={'gh': 'globalIrradiance'}, inplace=True) # in W m⁻²
@@ -239,14 +259,8 @@ class Preprocessor():
             # Create a new folder named by the current time and forecast product used
             current_time = time.strftime('%Y%m%d_%H%M%S')
 
-            # Distinguish between the two forecast products
-            if len(self.forecast_df.columns) > 10:
-                product = 'SF'
-            else:
-                product = 'CM'
-
             # Create the new folder
-            folder_name = f"{current_time}_{product}"
+            folder_name = f"{current_time}_{self.forecast_product}"
             new_folder_path = os.path.join(chosen_directory, folder_name)
             os.makedirs(new_folder_path)
             self.last_save_directory = new_folder_path # Update the last_save_directory attribute
