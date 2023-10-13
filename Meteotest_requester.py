@@ -323,7 +323,7 @@ class MeteotestRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        
+        print(type(response_df.index.get_level_values('time')))
         local_tz = tzlocal()
         self.previous_SF_time = pd.Timestamp.now(tz=local_tz)
         
@@ -355,7 +355,7 @@ class MeteotestRequester():
         
         # Parse the response
         response_df = self.parser.parse_solar_forecast_response(response, self.forecast_sites, function_tag=variables['action'])
-        
+
         local_tz = tzlocal()
         self.previous_CM_time = pd.Timestamp.now(tz=local_tz)
 

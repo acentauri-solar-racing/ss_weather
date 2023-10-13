@@ -24,7 +24,7 @@ class Preprocessor():
     
     def __init__(self, wind_height:float=0.5, print_is_requested:bool=False) -> None:
         self.print_is_requested = print_is_requested
-        self.last_save_directory: str = ''
+        self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
         self.forecast_product: str = ''
 
         self.route_df = pd.DataFrame()
@@ -249,7 +249,6 @@ class Preprocessor():
     
     def save_data2folder(self) -> None:
         """ Save the raw forecast data and the preprocessed data to CSV files. """
-
         root = tk.Tk()
         root.withdraw()  # Hide the main window
         root.lift()  # Bring the window to the front

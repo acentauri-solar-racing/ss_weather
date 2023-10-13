@@ -45,9 +45,9 @@ class SolcastExecuter():
                     if not (min_value <= value <= max_value):
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
         
-    def get_forecast(self, position:dict, print_is_requested:bool=False) -> Tuple[pd.DataFrame, bool]:
+    def get_forecast(self, position:dict, hours:int=48, print_is_requested:bool=False) -> Tuple[pd.DataFrame, bool]:
         """ """
-        self._check_variables(position)
+        # self._check_variables(position)
 
         try:
             response = forecast.radiation_and_weather(
@@ -56,12 +56,13 @@ class SolcastExecuter():
                 output_parameters='air_temp,ghi,wind_speed_10m,wind_direction_10m,relative_humidity',
                 format=self.FORMAT,
                 period=self.PERIOD,
+                hours=hours,
                 api_key=constants.KEY_SOLCAST
             )
 
         except Exception as e:
             print('No internet connection or another problem')
-            return pd.DataFrame(), False
+            return pd.DataFrame(index='time'), False
         
         if print_is_requested:
             print("Solar forecast Solcast have been retrieved.")
@@ -74,7 +75,7 @@ class SolcastExecuter():
 
         return response_df, True
     
-    def get_forecasts(self, route_api_df: pd.DataFrame, print_is_requested: bool = False) -> pd.DataFrame:
+    def get_forecasts(self, route_api_df:pd.DataFrame, hours_in_advance:int=48, print_is_requested:bool=False) -> pd.DataFrame:
         """ """
         # Check that the dataframe has the right columns
         if 'latitude' not in route_api_df.columns or 'longitude' not in route_api_df.columns or 'cumDistance' not in route_api_df.columns:
@@ -83,7 +84,7 @@ class SolcastExecuter():
         # Use apply to get forecasts for each row and store in a list
         forecasts_list = route_api_df.apply(
             lambda row: self.get_forecast(
-                {'latitude': row['latitude'], 'longitude': row['longitude']},
+                {'latitude': row['latitude'], 'longitude': row['longitude']}, hours=hours_in_advance,
                 print_is_requested=print_is_requested
             )[0].assign(cumDistance=row['cumDistance']),
             axis=1
