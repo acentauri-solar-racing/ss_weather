@@ -199,7 +199,7 @@ class Preprocessor():
             # SolarForecast
             self.forecast_df = self._data_restructure(raw_forecast_df)
 
-            column_name = ['tt', 'gh', 'rh', 'ff', 'dd', 'fx']
+            column_name = ['tt', 'gh', 'rh', 'ff', 'dd', 'fx', 'rr']
             self.preprocess_df = self.forecast_df[column_name].copy()
 
             self._data_cut_time(hours_in_advance)
@@ -227,7 +227,7 @@ class Preprocessor():
             # Data restructure needed
             self.forecast_df = raw_forecast_df.copy()
 
-            column_name = ['tt', 'gh', 'rh', 'ff', 'dd']
+            column_name = ['tt', 'gh', 'rh', 'ff', 'dd', 'rr']
             self.preprocess_df = self.forecast_df[column_name].copy()
 
             self._data_cut_time(hours_in_advance)
@@ -238,8 +238,8 @@ class Preprocessor():
 
             self.forecast_product = 'SC'
 
-        # Rename global irradiance column
-        self.preprocess_df.rename(columns={'gh': 'globalIrradiance'}, inplace=True) # in W m⁻²
+        # Rename untouched columns
+        self.preprocess_df.rename(columns={'gh': 'globalIrradiance', 'rr': 'precipitation'}, inplace=True) # in W m⁻² and mm
 
         # Round to 3 decimals
         self.forecast_df = self.forecast_df.round(3)

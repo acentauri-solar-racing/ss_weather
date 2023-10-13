@@ -53,7 +53,7 @@ class SolcastExecuter():
             response = forecast.radiation_and_weather(
                 latitude=position['latitude'],
                 longitude=position['longitude'],
-                output_parameters='air_temp,ghi,wind_speed_10m,wind_direction_10m,relative_humidity',
+                output_parameters='air_temp,ghi,wind_speed_10m,wind_direction_10m,relative_humidity,precipitation_rate',
                 format=self.FORMAT,
                 period=self.PERIOD,
                 hours=hours,
@@ -72,6 +72,9 @@ class SolcastExecuter():
 
         # Convert wind speed to km/h
         response_df['wind_speed_10m'] *= 3.6
+
+        # Convert precipitation rate to mm
+        response_df['precipitation_rate'] *= int(self.PERIOD.split('T')[1].replace('M', '')) / 60
 
         return response_df, True
     
@@ -105,7 +108,8 @@ class SolcastExecuter():
                 'ghi': 'gh',
                 'wind_speed_10m': 'ff',
                 'wind_direction_10m': 'dd',
-                'relative_humidity': 'rh'
+                'relative_humidity': 'rh',
+                'precipitation_rate': 'rr'
             }, inplace=True)
 
             local_tz = tzlocal()
