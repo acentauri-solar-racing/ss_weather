@@ -3,6 +3,7 @@ import os
 import sys
 import glob
 import time
+import constants
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
@@ -15,7 +16,6 @@ class DbQuerier():
     SAVE_NAME_VELOCITY = 'v'
 
     def __init__(self) -> None:
-        pass
         sys.path.append('C:/Users/giaco/Git_Repositories/aCentauri') #############TODO 
         sys.path.append('C:/Users/giaco/Git_Repositories/aCentauri/can-msg-api')
 
@@ -39,7 +39,10 @@ class DbQuerier():
         # Convert the entire icu_time_series to a DatetimeIndex
         icu_datetimes = pd.to_datetime(icu_time_series, unit='s').round('S')
 
-        self.last_velocity_df = pd.DataFrame({'time': icu_datetimes, 'velocity': velocity.values})
+        # Make it timezone aware
+        icu_datetimes_idx = pd.DatetimeIndex(icu_datetimes).tz_localize(constants.TIMEZONE)
+
+        self.last_velocity_df = pd.DataFrame({'time': icu_datetimes_idx, 'velocity': velocity.values})
 
         return self.last_velocity_df
     
@@ -53,7 +56,10 @@ class DbQuerier():
         # Convert the entire time_series to a DatetimeIndex
         bms_datetimes = pd.to_datetime(bms_time_series, unit='s').round('S')
 
-        self.last_soc_df = pd.DataFrame({'time': bms_datetimes, 'SoC': soc.values})
+        # Make it timezone aware
+        bms_datetimes_idx = pd.DatetimeIndex(bms_datetimes).tz_localize(constants.TIMEZONE)
+
+        self.last_soc_df = pd.DataFrame({'time': bms_datetimes_idx, 'SoC': soc.values})
 
         return self.last_soc_df
     

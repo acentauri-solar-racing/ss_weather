@@ -1,6 +1,7 @@
 import requests
 import json
 import pytz
+import constants
 import pandas as pd
 from typing import Tuple
 from bs4 import BeautifulSoup
@@ -115,7 +116,8 @@ class MeteotestParser():
     
     def parse_solar_forecast_response(self, response:requests.models.Response, forecast_sites:pd.DataFrame, function_tag:str) -> pd.DataFrame:
         """ Parse the response from the solar_forecast and _cloudmove functions.
-            The output time depends on the timezone of the first point!
+            NB: The output time depends on the timezone of the first point!
+                Now it is imposed to be always fix in Darwin timezone.
         
             Inputs:
                 response (requests.models.Response): The response object.
@@ -137,8 +139,12 @@ class MeteotestParser():
             {
                 'site_id': int(site_id),
                 'time': (pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S')
-                        .tz_localize('UTC')
-                        .astimezone(pytz.FixedOffset(forecast_sites.loc[int(site_id), 'UTC_offset'].total_seconds() / 60))),
+                        .tz_localize('UTC').tz_convert(constants.TIMEZONE)),
+                        # There is a BUG here because the correctly read UTC_offset is fix for all locations wrt the first location
+                        # this means that even if only one location is in a timezone, all other will have the same timezone
+                        # a possible solution (not needed for the BWSC) is to have time as a column and not as an index
+                        # .tz_localize('UTC')
+                        # .astimezone(pytz.FixedOffset(forecast_sites.loc[int(site_id), 'UTC_offset'].total_seconds() / 60))),
                 **time_forecast
             }
             for site_id, site_forecast in sites_data.items()
@@ -146,6 +152,11 @@ class MeteotestParser():
         ]
 
         response_df = pd.DataFrame.from_records(data_to_concat, index=['site_id', 'time'])
+
+        # Fix to Darwin timezone
+        # datetime_index = response_df.index.get_level_values('time')
+        # datetime_index_tz = datetime_index.tz_convert(constants.TIMEZONE)
+        # response_df.index = pd.MultiIndex.from_arrays([response_df.index.get_level_values('site_id'), datetime_index_tz], names=['site_id', 'time'])
 
         # Force the index to be a DatetimeIndex
         if not isinstance(response_df.index.get_level_values('time'), pd.DatetimeIndex):

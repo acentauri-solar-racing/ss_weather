@@ -69,6 +69,7 @@ class SolcastExecuter():
 
         response_df = response.to_pandas()
         response_df.index.name = 'time'
+        response_df.index = response_df.index.tz_convert(constants.TIMEZONE)
 
         # Convert wind speed to km/h
         response_df['wind_speed_10m'] *= 3.6
