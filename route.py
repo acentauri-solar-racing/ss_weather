@@ -58,7 +58,8 @@ class Route():
 
 
         # Create k-d tree for searching
-        self.kdtree = KDTree(self.route_df[['latitude', 'longitude']].values)
+        self.kdtree_geo = KDTree(self.route_df[['latitude', 'longitude']].values)
+        self.kdtree_cumDist = KDTree(self.route_df['cumDistance'].values)
 
     @property
     def get_route_data(self) -> pd.DataFrame:
@@ -94,6 +95,19 @@ class Route():
                             raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
+            
+    def find_closest_row_cumDistance(self, cumDistance:float, print_is_requested:bool=False) -> Tuple[pd.Series, bool]:
+        """ """
+
+        # Query the k-d tree to find the nearest point index
+        nearest_point_index = self.kdtree_cumDist.query([cumDistance], k=1)[1][0]
+        closest_row = self.route_df.iloc[nearest_point_index]
+
+        if print_is_requested:
+            print('Nearest index in csv file:', nearest_point_index + 2)
+            print('Nearest index in dataframe:', nearest_point_index)
+
+        return closest_row, nearest_point_index
     
     def find_closest_row(self, position:dict, print_is_requested:bool=False) -> Tuple[pd.Series, int]:
         """ Find the closest row in the route to the given position.
@@ -107,7 +121,7 @@ class Route():
         actual_coords = (position['latitude'], position['longitude'])
 
         # Query the k-d tree to find the nearest point index
-        nearest_point_index = self.kdtree.query([actual_coords], k=1)[1][0]
+        nearest_point_index = self.kdtree_geo.query([actual_coords], k=1)[1][0]
         closest_row = self.route_df.iloc[nearest_point_index]
 
         if print_is_requested:
