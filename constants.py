@@ -1,6 +1,10 @@
 ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
 CONTROL_STOPS = '..\\ss_offline_data\\route\\BWSC\\control_stops.csv'
 TIMEZONE = 'Australia/Darwin'
+GEO = {
+    'latitude':     {'min': -90.0, 'max': 90.0},
+    'longitude':    {'min': -180.0, 'max': 180.0}
+}
 TOKEN_MAXBOX = 'pk.eyJ1IjoiamFja21hc3Rybzk5IiwiYSI6ImNsbm1qeTN3bjJiOG8yc25zNzdzZzdqMTYifQ.UNq25l3Vhx3aEZDcHd35iw'
 MAX_SITES_NUMBER_METEOTEST = 150
 MAX_SITES_NUMBER_SOLCAST = 1500

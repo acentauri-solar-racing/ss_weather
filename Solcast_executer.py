@@ -15,7 +15,7 @@ class SolcastExecuter():
 
     KEY: str = constants.KEY_SOLCAST
     FORMAT: str = 'json'
-    PERIOD: str = 'PT15M'
+    PERIOD: str = 'PT15M' # Set the period to 15 minutes ISO8601 format
 
     def __init__(self) -> None:
         self.previous_df = pd.DataFrame()
@@ -28,8 +28,8 @@ class SolcastExecuter():
                 variables (dict): The variables to be checked. """
 
         validation_rules = {
-            'latitude': (float, -90.0, 90.0),
-            'longitude': (float, -180.0, 180.0),
+            'latitude': (float, constants.GEO['latitude']['min'], constants.GEO['latitude']['max']),
+            'longitude': (float, constants.GEO['longitude']['min'], constants.GEO['longitude']['max'])
         }
 
         for variable, value in variables.items():
@@ -45,9 +45,10 @@ class SolcastExecuter():
                     if not (min_value <= value <= max_value):
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
         
-    def get_forecast(self, position:dict, hours:int=48, print_is_requested:bool=False) -> Tuple[pd.DataFrame, bool]:
+    def get_forecast(self, position:dict, checked:bool=False, hours:int=48, print_is_requested:bool=False) -> Tuple[pd.DataFrame, bool]:
         """ """
-        # self._check_variables(position)
+        if not checked:
+            self._check_variables(position)
 
         try:
             response = forecast.radiation_and_weather(
@@ -79,7 +80,7 @@ class SolcastExecuter():
 
         return response_df, True
     
-    def get_forecasts(self, route_api_df:pd.DataFrame, hours_in_advance:int=48, print_is_requested:bool=False) -> pd.DataFrame:
+    def get_forecasts(self, route_api_df:pd.DataFrame, checked:bool=False, hours_in_advance:int=48, print_is_requested:bool=False) -> pd.DataFrame:
         """ """
         # Check that the dataframe has the right columns
         if 'latitude' not in route_api_df.columns or 'longitude' not in route_api_df.columns or 'cumDistance' not in route_api_df.columns:
@@ -88,7 +89,7 @@ class SolcastExecuter():
         # Use apply to get forecasts for each row and store in a list
         forecasts_list = route_api_df.apply(
             lambda row: self.get_forecast(
-                {'latitude': row['latitude'], 'longitude': row['longitude']}, hours=hours_in_advance,
+                {'latitude': row['latitude'], 'longitude': row['longitude']}, checked=checked, hours=hours_in_advance,
                 print_is_requested=print_is_requested
             )[0].assign(cumDistance=row['cumDistance']),
             axis=1

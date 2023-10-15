@@ -55,8 +55,8 @@ class MeteotestRequester():
             'name': (str, None, None),
             'action': (str, None, None),
             'format': (str, None, None),
-            'latitude': (float, -90.0, 90.0),
-            'longitude': (float, -180.0, 180.0),
+            'latitude': (float, constants.GEO['latitude']['min'], constants.GEO['latitude']['max']),
+            'longitude': (float, constants.GEO['longitude']['min'], constants.GEO['longitude']['max']),
             'azimuth': (int, 0, 360),
             'inclination': (int, 0, 90),
             'altitude': (int, None, None)

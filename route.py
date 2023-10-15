@@ -59,7 +59,6 @@ class Route():
 
         # Create k-d tree for searching
         self.kdtree_geo = KDTree(self.route_df[['latitude', 'longitude']].values)
-        self.kdtree_cumDist = KDTree(self.route_df['cumDistance'].values)
 
     @property
     def get_route_data(self) -> pd.DataFrame:
@@ -78,8 +77,8 @@ class Route():
                 variables (dict): The variables to be checked. """
 
         validation_rules = {
-            'latitude': (float, -90.0, 90.0),
-            'longitude': (float, -180.0, 180.0)
+            'latitude': (float, constants.GEO['latitude']['min'], constants.GEO['latitude']['max']),
+            'longitude': (float, constants.GEO['longitude']['min'], constants.GEO['longitude']['max'])
         }
 
         for variable, value in variables.items():
@@ -96,11 +95,15 @@ class Route():
             else:
                 raise ValueError(f'Wrong variable. Received: {variable}')
             
-    def find_closest_row_cumDistance(self, cumDistance:float, print_is_requested:bool=False) -> Tuple[pd.Series, bool]:
+    
+    def find_closest_row_cumDistance(self, cum_distance:float, print_is_requested:bool=False) -> Tuple[pd.Series, bool]:
         """ """
-
-        # Query the k-d tree to find the nearest point index
-        nearest_point_index = self.kdtree_cumDist.query([cumDistance], k=1)[1][0]
+        # Check that cumDistance is between the range
+        if not (self.route_df['cumDistance'].min() <= cum_distance <= self.route_df['cumDistance'].max()):
+            raise ValueError(f'Cumulative distance has to be between {self.route_df["cumDistance"].min()} and {self.route_df["cumDistance"].max()}. Received: {cum_distance}')
+        
+        nearest_point_index = self.route_df['cumDistance'].searchsorted(cum_distance, side='left')
+            
         closest_row = self.route_df.iloc[nearest_point_index]
 
         if print_is_requested:
