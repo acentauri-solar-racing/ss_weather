@@ -100,10 +100,10 @@ class Plotter():
         cut_data = cut_data[cut_data['cumDistance'] >= current_cumDistance]
         cut_data = cut_data.reset_index(drop=True)
 
-        current_time = cut_data['cumTimeAtMaxSpeed'][0]
+        current_time = cut_data['cumTimeAtMaxSpeedLim'][0]
 
         # Cut data at driving time (upper cut)
-        cut_data = cut_data[cut_data['cumTimeAtMaxSpeed'] <= current_time + driving_time]
+        cut_data = cut_data[cut_data['cumTimeAtMaxSpeedLim'] <= current_time + driving_time]
         max_cumDistance = cut_data['cumDistance'].max()
 
         # Check if the control stop dataframe is not empty
@@ -156,4 +156,4 @@ class Plotter():
             popup="Max speed distance"
         ).add_to(self.map)
 
-        return position_series['cumDistance'] - current_cumDistance
+        return position_series['cumDistance']

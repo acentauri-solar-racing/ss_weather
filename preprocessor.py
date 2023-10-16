@@ -1,6 +1,7 @@
 import os
 import time
 import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)
+import constants
 import pandas as pd
 import numpy as np
 import tkinter as tk
@@ -82,7 +83,7 @@ class Preprocessor():
         
         # Get the timezone of the machine (it depends on the settings) and create a time-aware Timestamp
         local_tz = tzlocal()
-        now = pd.Timestamp.now(tz=local_tz)
+        now = pd.Timestamp.now(tz=constants.TIMEZONE)
 
         # Drop past columns: less than now less 15 min to keep last row
         self.preprocess_df = self.preprocess_df[self.preprocess_df.index.get_level_values('time').tz_convert('UTC') >= now.tz_convert('UTC') - pd.Timedelta(minutes=15)]
