@@ -9,20 +9,14 @@ class GPS():
     """ Explanation """
     
     def __init__(self, com_port:str, baud:int=4800) -> None:
-        self.previous_position = pd.DataFrame()
+        self.position_df = pd.DataFrame()
 
         self.ser = serial.Serial(com_port, baudrate=baud, timeout=5)
-    
-    # _private method
-    def _parse_output(self, output) -> pd.DataFrame:
-        """ """
-        pass
+        
+        
     
     def get_current_location(self) -> pd.DataFrame:
         """ """
-        
-        
-        
         i = 0
         longitude_dd = 0.0;
         while longitude_dd == 0.0 and i < 30:
@@ -61,19 +55,10 @@ class GPS():
                 # Output
                 latitude_dd = round(latitude_dd, 6)
                 longitude_dd = round(longitude_dd, 6)
-        
-        
-        
-        
-        
-        
-        output = self.ser.readline() # ...
-
-        data = self._parse_output(output)
 
         now = pd.Timestamp.now(tz=constants.TIMEZONE)
         # insert also data
-        current_location_df = pd.DataFrame(columns=['latitude', 'longitude', 'velocity'], index=now)
+        current_location_df = pd.DataFrame(columns=['latitude', 'longitude'], index=now)
 
         return current_location_df
     
