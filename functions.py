@@ -1,14 +1,19 @@
 import geocoder
+import numpy as np
 
-def get_current_location() -> tuple:
+def get_current_location() -> dict:
     """ Get current location using geocoder. """
 
     g = geocoder.ip('me')  # 'me' corresponds to your current IP address
     if g.latlng:
         latitude, longitude = g.latlng
-        return latitude, longitude
+        return {'latitude': latitude, 'longitude': longitude}
     else:
         raise ValueError('Could not find your location. Please check your internet connection.')
+    
+def rad2deg(rad:float) -> float:
+    """ Convert radians to degrees. """
+    return rad * 180 / np.pi
     
 # from geopy.geocoders import Nominatim
 

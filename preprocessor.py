@@ -113,21 +113,21 @@ class Preprocessor():
         self._print(f'Temperature correction applied.')
 
     def _wind_log_correction(self) -> None:
-        """ Correct the wind speed and gust forecast at 10 meters to the wind speed at 0.5 meters in m/s.
+        """ Correct the wind speed and gust forecast at 10 meters to the wind speed at 0.5 meters in km/h.
             Equation taken from:
             https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh. """
         
         if 'fx' in self.preprocess_df.columns:
             self.preprocess_df.rename(columns={'ff': 'windSpeed', 'fx': 'windGust'}, inplace=True)
-            self.preprocess_df[['windSpeed', 'windGust']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
+            self.preprocess_df[['windSpeed', 'windGust']] *= self.CORRECTING_FACTOR
         else:
             self.preprocess_df.rename(columns={'ff': 'windSpeed'}, inplace=True)
-            self.preprocess_df[['windSpeed']] *= self.CORRECTING_FACTOR / 3.6 # Convert from km/h to m/s
+            self.preprocess_df[['windSpeed']] *= self.CORRECTING_FACTOR
         
         self._print(f'Wind log correction applied.')
 
     def _wind_decomposition(self) -> None:
-        """ Decompose the wind forecast at 0.5 meters to side and front wind in m/s. """
+        """ Decompose the wind forecast at 0.5 meters to side and front wind in km/h. """
 
         self.preprocess_df.rename(columns={'dd': 'windDirection'}, inplace=True)
         
@@ -136,9 +136,9 @@ class Preprocessor():
         theta_mapped = self.preprocess_df.index.get_level_values('cumDistance').map(theta) # Map the cumDistance level of wind_direction's index to the values in theta
         attack_angle = self.preprocess_df['windDirection'] - theta_mapped # in degrees
 
-        # Calculate wind speed components in m/s
-        self.preprocess_df['sideWind'] = self.preprocess_df['windSpeed'] * np.sin(np.radians(attack_angle)) / 3.6
-        self.preprocess_df['frontWind'] = self.preprocess_df['windSpeed'] * np.cos(np.radians(attack_angle)) / 3.6
+        # Calculate wind speed components in km/h
+        self.preprocess_df['sideWind'] = self.preprocess_df['windSpeed'] * np.sin(np.radians(attack_angle))
+        self.preprocess_df['frontWind'] = self.preprocess_df['windSpeed'] * np.cos(np.radians(attack_angle))
 
         self._print(f'Wind decomposition applied.')
 
