@@ -96,8 +96,6 @@ class SolcastExecuter():
         ).tolist()
 
         if forecasts_list:
-
-            # Concatenate all DataFrames in the list
             result_df = pd.concat(forecasts_list)
 
             # Set and reorder multi-index
@@ -114,6 +112,7 @@ class SolcastExecuter():
                 'precipitation_rate': 'rr'
             }, inplace=True)
 
+            # Save the previous time and dataframe
             local_tz = tzlocal()
             self.previous_time = pd.Timestamp.now(tz=local_tz)
             self.previous_df = result_df
