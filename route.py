@@ -1,6 +1,6 @@
-import pandas as pd
 import os
 import constants
+import pandas as pd
 import tkinter as tk
 from typing import Tuple
 from tkinter import filedialog
@@ -58,7 +58,8 @@ class Route():
 
 
         # Create k-d tree for searching
-        self.kdtree_geo = KDTree(self.route_df[['latitude', 'longitude']].values)
+        self.kdtree_route = KDTree(self.route_df[['latitude', 'longitude']].values)
+        # self.kdtree_cs = KDTree(self.control_stops_df[['latitude', 'longitude']].values)
 
     @property
     def get_route_data(self) -> pd.DataFrame:
@@ -103,7 +104,7 @@ class Route():
             raise ValueError(f'Cumulative distance has to be between {self.route_df["cumDistance"].min()} and {self.route_df["cumDistance"].max()}. Received: {cum_distance}')
         
         nearest_point_index = self.route_df['cumDistance'].searchsorted(cum_distance, side='left')
-            
+        
         closest_row = self.route_df.iloc[nearest_point_index]
 
         if print_is_requested:
@@ -124,7 +125,7 @@ class Route():
         actual_coords = (position['latitude'], position['longitude'])
 
         # Query the k-d tree to find the nearest point index
-        nearest_point_index = self.kdtree_geo.query([actual_coords], k=1)[1][0]
+        nearest_point_index = self.kdtree_route.query([actual_coords], k=1)[1][0]
         closest_row = self.route_df.iloc[nearest_point_index]
 
         if print_is_requested:
@@ -148,7 +149,7 @@ class Route():
         """ Insert the cumDistance column to the control stops data. """
 
         closest_rows_df = self.find_closest_rows(self.control_stops_df[['latitude', 'longitude']])
-        print(closest_rows_df['index'].values)
+
         self.control_stops_df['cumDistance'] = closest_rows_df['closest_row'].apply(lambda x: x['cumDistance']).values
         self.control_stops_df['dfIndex'] = closest_rows_df['index'].values
         self.control_stops_df['csvIndex'] = closest_rows_df['index'].values + 2
@@ -172,3 +173,41 @@ class Route():
             self.control_stops_df.to_csv(csv_file_path, index=False)
         
             print(f"Control stops data saved to {csv_file_path}.")
+
+    def find_next_cs_cumDistance(self, current_cum_distance:float, print_is_requested:bool=False) -> Tuple[pd.Series, bool]:
+        """ """
+        # Check that cumDistance is between the range
+        if not (self.route_df['cumDistance'].min() <= current_cum_distance <= self.route_df['cumDistance'].max()):
+            raise ValueError(f'Cumulative distance has to be between {self.route_df["cumDistance"].min()} and {self.route_df["cumDistance"].max()}. Received: {current_cum_distance}')
+        
+        nearest_point_index = self.control_stops_df['cumDistance'].searchsorted(current_cum_distance, side='left')
+        
+        closest_row = self.control_stops_df.iloc[nearest_point_index]
+
+        if print_is_requested:
+            print('Nearest index in csv file:', nearest_point_index + 2)
+            print('Nearest index in dataframe:', nearest_point_index)
+
+        return closest_row, nearest_point_index
+    
+    def find_next_cs(self, position:dict, print_is_requested:bool=False) -> Tuple[pd.Series, int]:
+        """ """
+        
+        self._check_variables(position)
+
+        row, _ = self.find_closest_row(position, print_is_requested=print_is_requested)
+
+        # Find the first cumDistance > row['cumDistance'] in control stop not the closest one
+        next_rows = self.control_stops_df[self.control_stops_df['cumDistance'] > row['cumDistance']]
+        
+        if next_rows.empty:
+            raise ValueError("There's no next control stop. The closest control stop might be the last one on the route.")
+        
+        next_index = next_rows.index[0]
+        next_row = self.control_stops_df.iloc[next_index]
+
+        if print_is_requested:
+            print('Nearest index in csv file:', next_index + 2)
+            print('Nearest index in dataframe:', next_index)
+
+        return next_row, next_index

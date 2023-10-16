@@ -5,7 +5,7 @@ GEO = {
     'latitude':     {'min': -90.0, 'max': 90.0},
     'longitude':    {'min': -180.0, 'max': 180.0}
 }
-TOKEN_MAXBOX = 'pk.eyJ1IjoiamFja21hc3Rybzk5IiwiYSI6ImNsbm1qeTN3bjJiOG8yc25zNzdzZzdqMTYifQ.UNq25l3Vhx3aEZDcHd35iw'
+TOKEN_MAPBOX = 'pk.eyJ1IjoiamFja21hc3Rybzk5IiwiYSI6ImNsbm1qeTN3bjJiOG8yc25zNzdzZzdqMTYifQ.UNq25l3Vhx3aEZDcHd35iw'
 MAX_SITES_NUMBER_METEOTEST = 150
 MAX_SITES_NUMBER_SOLCAST = 1500
 KEY_METEOTEST = '6C985B9DF101FF63EB494A0FF420FCA6'
