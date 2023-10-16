@@ -1,4 +1,6 @@
 import os
+import time
+import glob
 import serial
 import constants
 import pandas as pd
@@ -7,19 +9,30 @@ from tkinter import filedialog
 
 class GPS():
     """ Explanation """
+    CURRENT_DAY =  time.strftime('%Y%m%d')
+    SAVE_NAME = 'GPS'
     
     def __init__(self, com_port:str, baud:int=4800) -> None:
         self.position_df = pd.DataFrame()
+        self.last_save_directory = ""
 
         self.ser = serial.Serial(com_port, baudrate=baud, timeout=5)
-        
-        
+
+    @property
+    def get_last_position(self) -> pd.DataFrame:
+        """ """
+        return self.position_df.tail(1)
     
-    def get_current_location(self) -> pd.DataFrame:
+    @property
+    def get_all_positions(self) -> pd.DataFrame:
+        """ """
+        return self.position_df
+    
+    def get_current_location(self) -> dict:
         """ """
         i = 0
-        longitude_dd = 0.0;
-        while longitude_dd == 0.0 and i < 30:
+        found = False
+        while not found and i < 30:
             # increasing i; if i < 30 --> no fix achieved
             i += 1
             
@@ -39,30 +52,42 @@ class GPS():
                 longitude_EW = splitline[5]
                 
                 # DMM to DD conversion
-                latitude_degrees = int(latitude) // 100;  # Get the degrees part
-                latitude_minutes = (latitude % 100) / 60;  # Convert minutes to degrees
-                latitude_dd = latitude_degrees + latitude_minutes;
-                longitude_degrees = int(longitude) // 100;  # Get the degrees part
-                longitude_minutes = (longitude % 100) / 60;  # Convert minutes to degrees
-                longitude_dd = longitude_degrees + longitude_minutes;
+                latitude_degrees = int(latitude) // 100  # Get the degrees part
+                latitude_minutes = (latitude % 100) / 60  # Convert minutes to degrees
+                latitude_dd = latitude_degrees + latitude_minutes
+                longitude_degrees = int(longitude) // 100  # Get the degrees part
+                longitude_minutes = (longitude % 100) / 60  # Convert minutes to degrees
+                longitude_dd = longitude_degrees + longitude_minutes
                 
                 # Flipping signs for S and W coordinates
                 if latitude_NS == 'S':
-                    latitude_dd = -latitude_dd;
+                    latitude_dd = -latitude_dd
                 if longitude_EW == 'W':
-                    longitude_dd = -longitude_dd;
+                    longitude_dd = -longitude_dd
                 
                 # Output
                 latitude_dd = round(latitude_dd, 6)
                 longitude_dd = round(longitude_dd, 6)
 
-        now = pd.Timestamp.now(tz=constants.TIMEZONE)
-        # insert also data
-        current_location_df = pd.DataFrame(columns=['latitude', 'longitude'], index=now)
+                found = True
 
-        return current_location_df
+        now = pd.Timestamp.now(tz=constants.TIMEZONE)
+
+        # Create a dataframe with the current location
+        current_position = {
+            'latitude': [latitude_dd],
+            'longitude': [longitude_dd]
+        }
+        current_location_df = pd.DataFrame(current_position, index=[now])
+
+        # Concatenate the current location dataframe with the position dataframe
+        self.position_df = pd.concat([self.position_df, current_location_df])
+
+        # Reset index
+        self.position_df = self.position_df.reset_index(drop=True)
+
+        return current_position
     
-    # Can use something like this to save the data to a folder
     def save_data2folder(self) -> None:
         """ """
         root = tk.Tk()
@@ -72,13 +97,13 @@ class GPS():
         
         chosen_directory = filedialog.askdirectory(
             initialdir=self.last_save_directory,
-            title='Select a Folder to Append the Velocity and SoC Data to'
+            title='Select a Folder to Append the GPS data to'
         )
         
         # If a directory is chosen
         if chosen_directory:
             # Check if the name of folder contains the current day
-            pattern = os.path.join(chosen_directory, f"*{self.CURRENT_DAY}*")
+            pattern = os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}")
             directories_containing_current_day = [name for name in glob.glob(pattern) if os.path.isdir(name)]
 
             # If there is a folder containing the current day
@@ -86,33 +111,7 @@ class GPS():
                 print("A folder exists!")
                 # Enter in the first folder
                 first_folder = directories_containing_current_day[0]
-
-                # Check if the name of csv files inside contains SoC and v
-                pattern = os.path.join(first_folder, f"*{self.SAVE_NAME_SOC}*.csv")
-                soc_files = [name for name in glob.glob(pattern) if os.path.isfile(name)]
-                print(pattern)
-
-                pattern = os.path.join(first_folder, f"*{self.SAVE_NAME_VELOCITY}*.csv")
-                print(pattern)
-                velocity_files = [name for name in glob.glob(pattern) if os.path.isfile(name)]
-
-                # If there are both SoC and v files
-                if soc_files and velocity_files:
-                    # Append new data to existing CSV file
-                    self.last_soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), mode='a', header=False, index=False)
-                    self.last_velocity_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_VELOCITY}.csv'), mode='a', header=False, index=False)
-                
-                # If there are only SoC files
-                elif soc_files:
-                    # Append new data to existing CSV file
-                    self.last_soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), mode='a', header=False, index=False)
-                    self.last_velocity_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_VELOCITY}.csv'), index=False)
-
-                # If there are only v files
-                elif velocity_files:
-                    # Append new data to existing CSV file
-                    self.last_soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), index=False)
-                    self.last_velocity_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_VELOCITY}.csv'), mode='a', header=False, index=False)
+                self.position_df.to_csv(os.path.join(first_folder, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), mode='a', header=False, index=False)
 
             else:
                 print("A folder does not exist!")
@@ -123,6 +122,4 @@ class GPS():
                 self.last_save_directory = new_folder_path # Update the last_save_directory attribute
 
                 # Save the csv files
-                self.last_soc_df.to_csv(os.path.join(new_folder_path, f'{self.SAVE_NAME_SOC}.csv'), index=False)
-
-                self.last_velocity_df.to_csv(os.path.join(new_folder_path, f'{self.SAVE_NAME_VELOCITY}.csv'), index=False)
+                self.position_df.to_csv(os.path.join(new_folder_path, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), index=False)
