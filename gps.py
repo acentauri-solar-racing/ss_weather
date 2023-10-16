@@ -8,10 +8,10 @@ from tkinter import filedialog
 class GPS():
     """ Explanation """
     
-    def __init__(self, com_port:str, baud:int=9600) -> None:
+    def __init__(self, com_port:str, baud:int=4800) -> None:
         self.previous_position = pd.DataFrame()
 
-        self.ser = serial.Serial(com_port, baudrate=baud, timeout=1)
+        self.ser = serial.Serial(com_port, baudrate=baud, timeout=5)
     
     # _private method
     def _parse_output(self, output) -> pd.DataFrame:
@@ -20,6 +20,53 @@ class GPS():
     
     def get_current_location(self) -> pd.DataFrame:
         """ """
+        
+        
+        
+        i = 0
+        longitude_dd = 0.0;
+        while longitude_dd == 0.0 and i < 30:
+            # increasing i; if i < 30 --> no fix achieved
+            i += 1
+            
+            # Decode the bytes to a string using the correct encoding
+            line = self.ser.readline().decode('ISO-8859-1') 
+            splitline = line.split(',')
+            
+            # Getting GNGGA lines and checking if fix is active
+            if (splitline[0] == '$GNGGA') and (splitline[6] != '0'): #if splitline[6] is 0, no GPS fix and invalid
+                
+                # Getting latitude/longitude DMM values
+                latitude = float(splitline[2])
+                longitude = float(splitline[4])
+                
+                # Getting latitude/longitude NSEW letters
+                latitude_NS = splitline[3]
+                longitude_EW = splitline[5]
+                
+                # DMM to DD conversion
+                latitude_degrees = int(latitude) // 100;  # Get the degrees part
+                latitude_minutes = (latitude % 100) / 60;  # Convert minutes to degrees
+                latitude_dd = latitude_degrees + latitude_minutes;
+                longitude_degrees = int(longitude) // 100;  # Get the degrees part
+                longitude_minutes = (longitude % 100) / 60;  # Convert minutes to degrees
+                longitude_dd = longitude_degrees + longitude_minutes;
+                
+                # Flipping signs for S and W coordinates
+                if latitude_NS == 'S':
+                    latitude_dd = -latitude_dd;
+                if longitude_EW == 'W':
+                    longitude_dd = -longitude_dd;
+                
+                # Output
+                latitude_dd = round(latitude_dd, 6)
+                longitude_dd = round(longitude_dd, 6)
+        
+        
+        
+        
+        
+        
         output = self.ser.readline() # ...
 
         data = self._parse_output(output)
