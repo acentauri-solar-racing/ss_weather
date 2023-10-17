@@ -12,6 +12,8 @@ from gps import GPS
 class DbQuerier():
     """ Class to query the database and save the data to a folder."""
     NUM_ENTRIES = 5
+    MIN_VEL = 60 / 3.6 # in m/s
+
     CURRENT_DAY =  time.strftime('%Y%m%d')
     SAVE_NAME_SOC = 'SoC'
     SAVE_NAME_VELOCITY = 'Velocity'
@@ -92,6 +94,11 @@ class DbQuerier():
     def get_day_mean_velocity(self) -> float:
         """ """
         return self.all_day_v_df['velocity'].mean()
+    
+    @property
+    def get_day_mean_velocity60(self) -> float:
+        """ """
+        return self.all_day_v_df[self.all_day_v_df['velocity'] > self.MIN_VEL]['velocity'].mean()
     
     @property
     def get_last_velocity(self) -> float:
