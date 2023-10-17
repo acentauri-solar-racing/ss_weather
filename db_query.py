@@ -7,6 +7,7 @@ import constants
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
+from gps import GPS
 
 class DbQuerier():
     """ Class to query the database and save the data to a folder."""
@@ -15,7 +16,7 @@ class DbQuerier():
     SAVE_NAME_SOC = 'SoC'
     SAVE_NAME_VELOCITY = 'v'
 
-    def __init__(self) -> None:
+    def __init__(self, gps:GPS) -> None:
         sys.path.append('C:/Users/giaco/Git_Repositories/aCentauri') #############TODO 
         sys.path.append('C:/Users/giaco/Git_Repositories/aCentauri/can-msg-api')
 
@@ -28,6 +29,13 @@ class DbQuerier():
         self.last_soc_df: pd.DataFrame()
 
         self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
+
+        self.gps = gps
+
+    @property
+    def get_day_mean_velocity(self) -> float:
+        """ """
+        return self.last_velocity_df['velocity'].mean()
 
     def query_velocity(self) -> pd.DataFrame:
         """ """
@@ -42,7 +50,11 @@ class DbQuerier():
         # Make it timezone aware
         icu_datetimes_idx = pd.DatetimeIndex(icu_datetimes).tz_localize(constants.TIMEZONE)
 
-        self.last_velocity_df = pd.DataFrame({'time': icu_datetimes_idx, 'velocity': velocity.values})
+        current_position = self.gps.get_current_location()
+
+        self.last_velocity_df = pd.DataFrame({'velocity': velocity.values,
+                                              'latitude': current_position['latitude'],
+                                              'longitude': current_position['longitude']}, index=icu_datetimes_idx)
 
         return self.last_velocity_df
     
@@ -59,7 +71,11 @@ class DbQuerier():
         # Make it timezone aware
         bms_datetimes_idx = pd.DatetimeIndex(bms_datetimes).tz_localize(constants.TIMEZONE)
 
-        self.last_soc_df = pd.DataFrame({'time': bms_datetimes_idx, 'SoC': soc.values})
+        current_position = self.gps.get_current_location()
+
+        self.last_soc_df = pd.DataFrame({'SoC': soc.values,
+                                         'latitude': current_position['latitude'],
+                                         'longitude': current_position['longitude']}, index=bms_datetimes_idx)
 
         return self.last_soc_df
     
@@ -90,10 +106,8 @@ class DbQuerier():
                 # Check if the name of csv files inside contains SoC and v
                 pattern = os.path.join(first_folder, f"*{self.SAVE_NAME_SOC}*.csv")
                 soc_files = [name for name in glob.glob(pattern) if os.path.isfile(name)]
-                print(pattern)
 
                 pattern = os.path.join(first_folder, f"*{self.SAVE_NAME_VELOCITY}*.csv")
-                print(pattern)
                 velocity_files = [name for name in glob.glob(pattern) if os.path.isfile(name)]
 
                 # If there are both SoC and v files

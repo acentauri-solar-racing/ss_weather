@@ -14,7 +14,7 @@ class GPS():
     
     def __init__(self, com_port:str, baud:int=4800) -> None:
         self.position_df = pd.DataFrame()
-        self.last_save_directory = ""
+        self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
 
         self.ser = serial.Serial(com_port, baudrate=baud, timeout=5)
 
