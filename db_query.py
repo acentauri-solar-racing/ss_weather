@@ -14,9 +14,10 @@ class DbQuerier():
     NUM_ENTRIES = 5
     CURRENT_DAY =  time.strftime('%Y%m%d')
     SAVE_NAME_SOC = 'SoC'
-    SAVE_NAME_VELOCITY = 'v'
+    SAVE_NAME_VELOCITY = 'Velocity'
 
     def __init__(self, gps:GPS) -> None:
+        # Add the can-msg-api folder to the path
         sys.path.append('C:/Users/giaco/Git_Repositories/aCentauri') #############TODO 
         sys.path.append('C:/Users/giaco/Git_Repositories/aCentauri/can-msg-api')
 
@@ -25,17 +26,73 @@ class DbQuerier():
 
         self.can_db_models = importlib.import_module("can-msg-api.db.models")
 
-        self.last_velocity_df: pd.DataFrame()
-        self.last_soc_df: pd.DataFrame()
-
+        # Open old data
         self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
+
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        root.lift()  # Bring the window to the front
+        root.attributes('-topmost', True)  # Keep the window on top of all others
+        
+        # Ask the user to select TWO folders containing the data
+        chosen_directory = filedialog.askdirectory(
+            initialdir=self.last_save_directory,
+            title='Select the Solar_car Folder'
+        )
+        
+        # If a directory is chosen
+        if chosen_directory:
+            # Check if the folder contains Soc
+            pattern = os.path.join(chosen_directory, f"*{self.SAVE_NAME_SOC}*")
+            soc_folder = [name for name in glob.glob(pattern) if os.path.isdir(name)]
+
+            if soc_folder:
+                # Check if the folder contains the current day csv file
+                pattern = os.path.join(soc_folder[0], f"{self.CURRENT_DAY}_{self.SAVE_NAME_SOC}.csv")
+                soc_file = [name for name in glob.glob(pattern) if os.path.isfile(name)]
+
+                if soc_file:
+                    # Extract data from csv file
+                    self.all_day_soc_df = pd.read_csv(soc_file[0])
+
+                else:
+                    self.all_day_soc_df = pd.DataFrame()
+
+            # Check if the folder contains Velocity
+            pattern = os.path.join(chosen_directory, f"*{self.SAVE_NAME_VELOCITY}*")
+            velocity_folder = [name for name in glob.glob(pattern) if os.path.isdir(name)]
+
+            if velocity_folder:
+                # Check if the folder contains the current day csv file
+                pattern = os.path.join(velocity_folder[0], f"{self.CURRENT_DAY}_{self.SAVE_NAME_VELOCITY}.csv")
+                velocity_file = [name for name in glob.glob(pattern) if os.path.isfile(name)]
+
+                if velocity_file:
+                    # Extract data from csv file
+                    self.all_day_v_df = pd.read_csv(velocity_file[0])
+
+                else:
+                    self.all_day_v_df = pd.DataFrame()
+        
+        self.new_data_day_soc_df = pd.DataFrame()
+        self.new_data_day_v_df = pd.DataFrame()
 
         self.gps = gps
 
     @property
     def get_day_mean_velocity(self) -> float:
         """ """
-        return self.last_velocity_df['velocity'].mean()
+        return self.all_day_v_df['velocity'].mean()
+    
+    @property
+    def get_last_velocity(self) -> float:
+        """ """
+        return self.all_day_v_df['velocity'].tail(1)
+    
+    @property
+    def get_last_soc(self) -> float:
+        """ """
+        return self.all_day_soc_df['SoC'].tail(1)
 
     def query_velocity(self) -> pd.DataFrame:
         """ """
@@ -52,11 +109,16 @@ class DbQuerier():
 
         current_position = self.gps.get_current_location()
 
-        self.last_velocity_df = pd.DataFrame({'velocity': velocity.values,
-                                              'latitude': current_position['latitude'],
-                                              'longitude': current_position['longitude']}, index=icu_datetimes_idx)
+        velocity_df = pd.DataFrame({'velocity': velocity.values,
+                                    'latitude': current_position['latitude'],
+                                    'longitude': current_position['longitude']}, index=icu_datetimes_idx)
+        velocity_df.index.name = 'time'
+        
+        # Concatenate the current velocity
+        self.all_day_v_df = pd.concat([self.all_day_v_df, velocity_df])
+        self.new_data_day_v_df = pd.concat([self.new_data_day_v_df, velocity_df])
 
-        return self.last_velocity_df
+        return velocity_df
     
     def query_soc(self) -> pd.DataFrame:
         """ """
@@ -73,11 +135,16 @@ class DbQuerier():
 
         current_position = self.gps.get_current_location()
 
-        self.last_soc_df = pd.DataFrame({'SoC': soc.values,
-                                         'latitude': current_position['latitude'],
-                                         'longitude': current_position['longitude']}, index=bms_datetimes_idx)
+        self.soc_df = pd.DataFrame({'SoC': soc.values,
+                                    'latitude': current_position['latitude'],
+                                    'longitude': current_position['longitude']}, index=bms_datetimes_idx)
+        self.soc_df.index.name = 'time'
 
-        return self.last_soc_df
+        # Concatenate the current SoC
+        self.all_day_soc_df = pd.concat([self.all_day_soc_df, self.soc_df])
+        self.new_data_day_soc_df = pd.concat([self.new_data_day_soc_df, self.soc_df])
+
+        return self.soc_df
     
     def save_data2folder(self) -> None:
         """ """
@@ -113,19 +180,19 @@ class DbQuerier():
                 # If there are both SoC and v files
                 if soc_files and velocity_files:
                     # Append new data to existing CSV file
-                    self.last_soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), mode='a', header=False, index=False)
+                    self.soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), mode='a', header=False, index=False)
                     self.last_velocity_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_VELOCITY}.csv'), mode='a', header=False, index=False)
                 
                 # If there are only SoC files
                 elif soc_files:
                     # Append new data to existing CSV file
-                    self.last_soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), mode='a', header=False, index=False)
+                    self.soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), mode='a', header=False, index=False)
                     self.last_velocity_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_VELOCITY}.csv'), index=False)
 
                 # If there are only v files
                 elif velocity_files:
                     # Append new data to existing CSV file
-                    self.last_soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), index=False)
+                    self.soc_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_SOC}.csv'), index=False)
                     self.last_velocity_df.to_csv(os.path.join(first_folder, f'{self.SAVE_NAME_VELOCITY}.csv'), mode='a', header=False, index=False)
 
             else:
@@ -137,6 +204,6 @@ class DbQuerier():
                 self.last_save_directory = new_folder_path # Update the last_save_directory attribute
 
                 # Save the csv files
-                self.last_soc_df.to_csv(os.path.join(new_folder_path, f'{self.SAVE_NAME_SOC}.csv'), index=False)
+                self.soc_df.to_csv(os.path.join(new_folder_path, f'{self.SAVE_NAME_SOC}.csv'), index=False)
 
                 self.last_velocity_df.to_csv(os.path.join(new_folder_path, f'{self.SAVE_NAME_VELOCITY}.csv'), index=False)
