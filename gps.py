@@ -71,6 +71,10 @@ class GPS():
 
                 found = True
 
+        if not found:
+            print("No GPS fix achieved!")
+            return None
+        
         now = pd.Timestamp.now(tz=constants.TIMEZONE)
 
         # Create a dataframe with the current location

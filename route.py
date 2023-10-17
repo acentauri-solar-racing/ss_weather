@@ -79,7 +79,9 @@ class Route():
 
         validation_rules = {
             'latitude': (float, constants.GEO['latitude']['min'], constants.GEO['latitude']['max']),
-            'longitude': (float, constants.GEO['longitude']['min'], constants.GEO['longitude']['max'])
+            'longitude': (float, constants.GEO['longitude']['min'], constants.GEO['longitude']['max']),
+            'cumDistance': (float, self.route_df['cumDistance'].min(), self.route_df['cumDistance'].max()),
+            'cumDistance_km': (float, self.route_df['cumDistance'].min() / 1000, self.route_df['cumDistance'].max() / 1000)
         }
 
         for variable, value in variables.items():
