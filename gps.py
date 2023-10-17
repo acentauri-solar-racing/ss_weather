@@ -27,12 +27,12 @@ class GPS():
         
         # If a directory is chosen
         if chosen_directory:
+            self.last_save_directory = chosen_directory
+
             # Check if the folder contains the current day csv file
             pattern = os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv")
             directories_containing_current_day = [name for name in glob.glob(pattern) if os.path.isdir(name)]
-
-            self.last_save_directory = chosen_directory
-
+            
             # If there is one
             if directories_containing_current_day:
                 # Extract data from csv file
@@ -104,16 +104,13 @@ class GPS():
             print("No GPS fix achieved!")
             return None
         
-        now = pd.Timestamp.now(tz=constants.TIMEZONE)
-
         # Create a dataframe with the current location
         current_position = {
             'latitude': [latitude_dd],
             'longitude': [longitude_dd]
         }
 
-        current_location_df = pd.DataFrame(current_position, index=[now])
-        current_location_df.index.name = 'time'
+        current_location_df = pd.DataFrame({'time': [pd.Timestamp.now(tz=constants.TIMEZONE)], **current_position})
 
         # Concatenate the current location
         self.all_day_df = pd.concat([self.all_day_df, current_location_df])
@@ -123,37 +120,5 @@ class GPS():
     
     def save_data2folder(self) -> None:
         """ """
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        root.lift()  # Bring the window to the front
-        root.attributes('-topmost', True)  # Keep the window on top of all others
-        
-        chosen_directory = filedialog.askdirectory(
-            initialdir=self.last_save_directory,
-            title='Select the GPS Folder'
-        )
-        
-        # If a directory is chosen
-        if chosen_directory:
-            # Check if the name of folder contains the current day
-            pattern = os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}")
-            directories_containing_current_day = [name for name in glob.glob(pattern) if os.path.isdir(name)]
-
-            # If there is a folder containing the current day
-            if directories_containing_current_day:
-                first_folder = directories_containing_current_day[0]
-
-                # Save only new data
-                self.new_data_day_df.to_csv(os.path.join(first_folder, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), mode='a', header=False, index=False)
-                self.new_data_day_df = pd.DataFrame() # Reset the new_data_df attribute
-
-            # Create a new folder
-            else:
-                folder_name = f"{self.CURRENT_DAY}"
-                new_folder_path = os.path.join(chosen_directory, folder_name)
-                os.makedirs(new_folder_path)
-                self.last_save_directory = new_folder_path # Update the last_save_directory attribute
-
-                # Save all data
-                self.all_day_df.to_csv(os.path.join(new_folder_path, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), index=False)
-                self.new_data_day_df = pd.DataFrame() # Reset the new_data_df attribute
+        self.new_data_day_df.to_csv(os.path.join(self.last_save_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), mode='a', header=False, index=False)
+        self.new_data_day_df = pd.DataFrame() # Reset the new_data_df attribute
