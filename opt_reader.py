@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-import constants
+import glob
 import tkinter as tk
 from tkinter import filedialog
 from dateutil.tz import tzlocal
@@ -8,14 +8,13 @@ from dateutil.tz import tzlocal
 class OptReader():
     """ """
     
-    def __init__(self, choose_specific_data:bool=True) -> None:
-        self.previous_optimal_df: pd.DataFrame = self.read_optimal_data(choose_specific=choose_specific_data)
-        self.previous_time: pd.Timestamp = pd.NaT
+    def __init__(self, choose_specific:bool=True) -> None:
+        _ = self.update_optimal_data(choose_specific=choose_specific)
 
     @property
     def get_optimal_data(self) -> pd.DataFrame:
         """ Return the optimal data as a Pandas DataFrame. """
-        return self.previous_optimal_df
+        return self.optimal_df
 
     @property
     def get_optimal_last_time(self) -> pd.Timestamp:
@@ -25,9 +24,9 @@ class OptReader():
     @property
     def get_mean_velocity(self) -> float:
         """ Return the mean velocity of the optimal data. """
-        return self.previous_optimal_df['velocity'].mean()
+        return self.optimal_df['velocity'].mean()
     
-    def read_optimal_data(self, choose_specific:bool=True) -> pd.DataFrame:
+    def update_optimal_data(self, choose_specific:bool=True) -> pd.DataFrame:
         """ """
         # Upload optimal data
         if choose_specific:
@@ -41,16 +40,32 @@ class OptReader():
             if chosen_file:
                 local_tz = tzlocal()
                 self.previous_time = pd.Timestamp.now(tz=local_tz)
-                self.previous_optimal_df = pd.read_csv(chosen_file)
 
+                self.optimal_df = pd.read_csv(chosen_file)
                 print(f"Data read from {chosen_file}.")
-                return self.previous_optimal_df
             
             else:
+
+                self.optimal_df = pd.DataFrame()
+                self.previous_time: pd.Timestamp = pd.NaT
                 print("No directory chosen. Data not read.")
-                return None
         
         else:
-            script_directory = os.path.dirname(os.path.abspath(__file__))
-            csv_file_path = os.path.join(script_directory, constants.ROUTE)
-            self.optimal_df = pd.read_csv(csv_file_path)
+            script_directory = 'G:\\Shared drives\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\DP_optimal'
+
+            # Check in the folder for the most recent csv file
+            pattern = os.path.join(script_directory, "*.csv")
+            list_of_files = glob.glob(pattern)
+
+            if list_of_files:
+                local_tz = tzlocal()
+                self.previous_time = pd.Timestamp.now(tz=local_tz)
+
+                latest_file = max(list_of_files, key=os.path.getctime)
+                self.optimal_df = pd.read_csv(latest_file)
+                print(f"Data read from {latest_file}.")
+            else:
+
+                self.optimal_df = pd.DataFrame()
+                self.previous_time: pd.Timestamp = pd.NaT
+                print("No csv file found in the folder!")
