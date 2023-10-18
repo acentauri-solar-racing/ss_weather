@@ -30,7 +30,7 @@ class TimeSpaceForecaster():
         self.working_df = self.route_data.copy()
         self.working_df[self.working_col_name] = time_at_input_v.cumsum()
     
-    def _recursive_position_finder(self, driving_time:float, cs_to_skip:int) -> pd.Series:
+    def _recursive_position_finder(self, driving_time:float, cs_to_skip:int, print_is_requested:bool=False) -> pd.Series:
         """ """
         # Cut data at current position (lower cut)
         cut_data = self.working_df.copy()
@@ -48,8 +48,10 @@ class TimeSpaceForecaster():
         if not self.control_stops.empty:
             cs_in_range_mask = (self.control_stops['cumDistance'] >= self.current_cumDistance) & (self.control_stops['cumDistance'] <= max_cumDistance)
             cs_in_range = cs_in_range_mask.sum()
-            print(f'cs found ahead: {cs_in_range}')
-            print(f'cs to skip: {cs_to_skip}')
+
+            if print_is_requested:
+                print(f'cs found ahead: {cs_in_range}')
+                print(f'cs to skip: {cs_to_skip}')
         else:
             print("No control stop dataframe given")
 
