@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import filedialog
 from dateutil.tz import tzlocal
 
-class OptReader():
+class OptimalReader():
     """ """
     
     def __init__(self, choose_specific:bool=True) -> None:

@@ -23,9 +23,19 @@ class Preprocessor():
     ROUGHNESS_LENGTH_Z0 = 0.03 # in meters from roughness class 1 (https://wind-data.ch/tools/profile.php?h=10&v=5&z0=0.03&abfrage=Refresh)
     REFERENCE_HEIGHT_H1 = 10.0 # in meters
     
-    def __init__(self, wind_height:float=0.5, print_is_requested:bool=False) -> None:
+    def __init__(self, wind_height:float=0.5, choose_specific:bool=True, print_is_requested:bool=False) -> None:
+        if choose_specific:
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            root.lift()  # Bring the window to the front
+            root.attributes('-topmost', True)  # Keep the window on top of all others
+            
+            self.save_directory = filedialog.askdirectory(title='Select a Folder to Save Forecast Data')
+
+        else:
+            self.save_directory = 'G:\\Shared drives\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\Forecast'
+    
         self.print_is_requested = print_is_requested
-        self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
         self.forecast_product: str = ''
 
         self.route_df = pd.DataFrame()
@@ -250,27 +260,14 @@ class Preprocessor():
     
     def save_data2folder(self) -> None:
         """ Save the raw forecast data and the preprocessed data to CSV files. """
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        root.lift()  # Bring the window to the front
-        root.attributes('-topmost', True)  # Keep the window on top of all others
-        
-        chosen_directory = filedialog.askdirectory(
-            initialdir=self.last_save_directory,
-            title='Select a Folder to Save Forecast Data'
-        )
-        
-        # If a directory is chosen
-        if chosen_directory:
+        if self.save_directory:
             # Create a new folder named by the current time and forecast product used
             current_time = time.strftime('%Y%m%d_%H%M%S')
 
             # Create the new folder
             folder_name = f"{current_time}_{self.forecast_product}"
-            new_folder_path = os.path.join(chosen_directory, folder_name)
+            new_folder_path = os.path.join(self.save_directory, folder_name)
             os.makedirs(new_folder_path)
-            self.last_save_directory = new_folder_path # Update the last_save_directory attribute
-
 
             # Save the chosen columns for MPC and DP
             self.route_df[['cumDistance', 'maxSpeed', 'inclinationSmoothed']].to_csv(os.path.join(new_folder_path, 'route.csv'))

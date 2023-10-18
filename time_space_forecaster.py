@@ -2,17 +2,17 @@ import pandas as pd
 from route import Route
 from gps import GPS
 from db_querier import DbQuerier
-from opt_reader import OptReader
+from optimal_reader import OptimalReader
 
 
 class TimeSpaceForecaster():
     """ """
     
-    def __init__(self, route:Route, gps:GPS, db_querier:DbQuerier, opt_reader:OptReader) -> None:
+    def __init__(self, route:Route, gps:GPS, db_querier:DbQuerier, optimal_reader:OptimalReader) -> None:
         self.route = route
         self.gps = gps
         self.db_querier = db_querier
-        self.opt_reader = opt_reader
+        self.opt_reader = optimal_reader
 
         self.route_data = self.route.get_route_data
         self.control_stops = self.route.get_control_stops_data
@@ -83,7 +83,7 @@ class TimeSpaceForecaster():
 
         # Subtract start time to now
         now = pd.Timestamp.now()
-        driving_time = pd.Timedelta(hours=time['hours'], minutes=time['minutes']) - pd.Timedelta(hours=now.hour, minutes=now.minute)
+        driving_time = pd.Timedelta(hours=time['hour'], minutes=time['minute']) - pd.Timedelta(hours=now.hour, minutes=now.minute)
 
         if "max_speed" in type:
             # Set working dataframe
