@@ -22,6 +22,11 @@ class OptReader():
         """ Return the time of the last optimal data. """
         return self.previous_time
     
+    @property
+    def get_mean_velocity(self) -> float:
+        """ Return the mean velocity of the optimal data. """
+        return self.previous_optimal_df['velocity'].mean()
+    
     def read_optimal_data(self, choose_specific_data:bool=True) -> pd.DataFrame:
         """ """
         # Upload optimal data
