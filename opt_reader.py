@@ -9,7 +9,7 @@ class OptReader():
     """ """
     
     def __init__(self, choose_specific_data:bool=True) -> None:
-        self.previous_optimal_df: pd.DataFrame = self.read_optimal_data(choose_specific_data=choose_specific_data)
+        self.previous_optimal_df: pd.DataFrame = self.read_optimal_data(choose_specific=choose_specific_data)
         self.previous_time: pd.Timestamp = pd.NaT
 
     @property
@@ -27,10 +27,10 @@ class OptReader():
         """ Return the mean velocity of the optimal data. """
         return self.previous_optimal_df['velocity'].mean()
     
-    def read_optimal_data(self, choose_specific_data:bool=True) -> pd.DataFrame:
+    def read_optimal_data(self, choose_specific:bool=True) -> pd.DataFrame:
         """ """
         # Upload optimal data
-        if choose_specific_data:
+        if choose_specific:
             root = tk.Tk()
             root.withdraw()  # Hide the main window
             root.lift()  # Bring the window to the front
@@ -50,8 +50,7 @@ class OptReader():
                 print("No directory chosen. Data not read.")
                 return None
         
-        # else:
-        #     # Upload route data
-        #     script_directory = os.path.dirname(os.path.abspath(__file__))
-        #     csv_file_path = os.path.join(script_directory, constants.ROUTE)
-        #     self.optimal_df = pd.read_csv(csv_file_path)
+        else:
+            script_directory = os.path.dirname(os.path.abspath(__file__))
+            csv_file_path = os.path.join(script_directory, constants.ROUTE)
+            self.optimal_df = pd.read_csv(csv_file_path)

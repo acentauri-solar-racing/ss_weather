@@ -3,11 +3,9 @@ PyMySQL
 SQLAlchemy
 python-dotenv
 psychrolib
-numpy
 requests
 bs4
 scipy
-tkinter
 geocoder
 pytz
 python-dateutil
@@ -16,3 +14,5 @@ matplotlib
 dash-leaflet
 jupyter-dash
 solcast
+numpy
+tk
