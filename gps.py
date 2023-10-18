@@ -23,7 +23,7 @@ class GPS():
             root.lift()  # Bring the window to the front
             root.attributes('-topmost', True)  # Keep the window on top of all others
             
-            chosen_directory = filedialog.askdirectory(initialdir=self.last_save_directory, title='Select the GPS Folder')
+            chosen_directory = filedialog.askdirectory(title='Select the GPS Folder')
 
         else:
             chosen_directory = 'G:\\Shared drives\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\Solar_car\\GPS'
@@ -39,13 +39,14 @@ class GPS():
             # If there is one
             if directories_containing_current_day:
                 # Extract data from csv file
-                self.all_day_df = pd.read_csv(f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv")
+                self.all_day_df = pd.read_csv(os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"))
+                print("Data loaded from csv file")
 
             else:
-                print("No csv file found for the current day!")
                 # Create the empty csv file
                 self.all_day_df = pd.DataFrame(columns=['time', 'latitude', 'longitude'])
                 self.all_day_df.to_csv(os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), index=False)
+                print("No csv file found. New created")
 
     @property
     def get_last_position(self) -> pd.DataFrame:
