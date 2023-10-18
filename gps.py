@@ -18,7 +18,7 @@ class GPS():
             self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
 
         else:
-            self.last_save_directory = 'G:\\Drive condivisi\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\Solar_car\\GPS'
+            self.last_save_directory = 'G:\\Shared drives\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\Solar_car\\GPS'
             
         root = tk.Tk()
         root.withdraw()  # Hide the main window
