@@ -12,9 +12,14 @@ class GPS():
     CURRENT_DAY =  time.strftime('%Y%m%d')
     SAVE_NAME = 'GPS'
     
-    def __init__(self, com_port:str, baud:int=4800) -> None:
-        self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
+    def __init__(self, com_port:str, baud:int=4800, choose_specific:bool=False) -> None:
 
+        if choose_specific:
+            self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
+
+        else:
+            self.last_save_directory = 'G:\\Drive condivisi\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\Solar_car\\GPS'
+            
         root = tk.Tk()
         root.withdraw()  # Hide the main window
         root.lift()  # Bring the window to the front
@@ -31,7 +36,7 @@ class GPS():
 
             # Check if the folder contains the current day csv file
             pattern = os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv")
-            directories_containing_current_day = [name for name in glob.glob(pattern) if os.path.isdir(name)]
+            directories_containing_current_day = [name for name in glob.glob(pattern) if os.path.isfile(name)]
             
             # If there is one
             if directories_containing_current_day:
@@ -39,9 +44,11 @@ class GPS():
                 self.all_day_df = pd.read_csv(f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv")
 
             else:
+                print("No csv file found for the current day!")
                 # Create the empty csv file
-                self.all_day_df = pd.DataFrame()
-                self.all_day_df.to_csv(f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv", index=False)
+                self.all_day_df = pd.DataFrame(columns=['time', 'latitude', 'longitude'])
+                print(self.all_day_df)
+                self.all_day_df.to_csv(os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), index=False)
         
         self.new_data_day_df = pd.DataFrame()
 
@@ -106,8 +113,8 @@ class GPS():
         
         # Create a dataframe with the current location
         current_position = {
-            'latitude': [latitude_dd],
-            'longitude': [longitude_dd]
+            'latitude': latitude_dd,
+            'longitude': longitude_dd
         }
 
         current_location_df = pd.DataFrame({'time': [pd.Timestamp.now(tz=constants.TIMEZONE)], **current_position})
