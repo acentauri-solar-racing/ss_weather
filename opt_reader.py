@@ -45,13 +45,12 @@ class OptReader():
                 print(f"Data read from {chosen_file}.")
             
             else:
-
                 self.optimal_df = pd.DataFrame()
                 self.previous_time: pd.Timestamp = pd.NaT
                 print("No directory chosen. Data not read.")
-        
+
         else:
-            script_directory = 'G:\\Shared drives\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\DP_optimal'
+            script_directory = 'G:\\Shared drives\\AlphaCentauri\\SolarCar_22 23\\6. Strategy & Simulation\\ss_online_data\\DP_optimal\\CSV'
 
             # Check in the folder for the most recent csv file
             pattern = os.path.join(script_directory, "*.csv")
@@ -64,8 +63,8 @@ class OptReader():
                 latest_file = max(list_of_files, key=os.path.getctime)
                 self.optimal_df = pd.read_csv(latest_file)
                 print(f"Data read from {latest_file}.")
-            else:
 
+            else:
                 self.optimal_df = pd.DataFrame()
                 self.previous_time: pd.Timestamp = pd.NaT
                 print("No csv file found in the folder!")
