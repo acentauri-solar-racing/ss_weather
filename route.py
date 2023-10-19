@@ -87,6 +87,11 @@ class Route():
         """ Return the control stop data as a Pandas DataFrame. """
         return self.control_stops_df
     
+    @property
+    def get_camping_data(self) -> pd.DataFrame:
+        """ Return the camping data as a Pandas DataFrame. """
+        return self.camping_df
+    
     def _check_variables(self, variables:dict) -> None:
         """ Check if the variables are of the correct type and between the ranges. 
         
