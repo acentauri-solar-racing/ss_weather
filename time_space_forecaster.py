@@ -63,9 +63,6 @@ class TimeSpaceForecaster():
         # All control stops considered
         if cs_to_skip == cs_in_range:
             print("All control stops considered")
-            print(max_cumDistance)
-            print(type(max_cumDistance))
-            print(self.route_data['cumDistance'] == max_cumDistance)
             return self.route_data.loc[self.route_data['cumDistance'] == max_cumDistance].iloc[0]
         
         # Stop at control stop for the night, meaning we arrive at cs between 16:30 and 17:00

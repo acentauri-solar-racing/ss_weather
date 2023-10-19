@@ -13,9 +13,9 @@ class Route():
             choose_specific_route (bool): If True, a file dialog will open to allow the user to choose a specific route file. 
                 If False, the route file specified in constants.py will be used. Defaults to False. """
     
-    def __init__(self, choose_specific_route:bool=False) -> None:
+    def __init__(self, choose_specific:bool=False) -> None:
         # Upload route data
-        if choose_specific_route:
+        if choose_specific:
             root = tk.Tk()
             root.withdraw()  # Hide the main window
             root.lift()  # Bring the window to the front
@@ -28,7 +28,6 @@ class Route():
                 print(f"Data read from {chosen_file}.")
             else:
                 print("No directory chosen. Data not read.")
-
             
             # Upload control stops
             root = tk.Tk()
@@ -49,7 +48,6 @@ class Route():
             script_directory = os.path.dirname(os.path.abspath(__file__))
             csv_file_path = os.path.join(script_directory, constants.ROUTE)
             self.route_df = pd.read_csv(csv_file_path)
-
 
             # Upload control stops
             script_directory = os.path.dirname(os.path.abspath(__file__))
@@ -80,8 +78,8 @@ class Route():
         validation_rules = {
             'latitude': (float, constants.GEO['latitude']['min'], constants.GEO['latitude']['max']),
             'longitude': (float, constants.GEO['longitude']['min'], constants.GEO['longitude']['max']),
-            'cumDistance': (float, self.route_df['cumDistance'].min(), self.route_df['cumDistance'].max()),
-            'cumDistance_km': (float, self.route_df['cumDistance'].min() / 1000, self.route_df['cumDistance'].max() / 1000)
+            'cumDistance': ((float, int), self.route_df['cumDistance'].min(), self.route_df['cumDistance'].max()),
+            'cumDistance_km': ((float, int), self.route_df['cumDistance'].min() / 1000, self.route_df['cumDistance'].max() / 1000)
         }
 
         for variable, value in variables.items():
@@ -147,7 +145,7 @@ class Route():
         closest_rows_df = pd.DataFrame(closest_rows_and_indices.tolist(), columns=['closest_row', 'index'])
         return closest_rows_df
     
-    def insert_to_control_stops(self, choose_specific_route:bool=False) -> None:
+    def insert_to_control_stops(self, choose_specific:bool=False) -> None:
         """ Insert the cumDistance column to the control stops data. """
 
         closest_rows_df = self.find_closest_rows(self.control_stops_df[['latitude', 'longitude']])
@@ -156,7 +154,7 @@ class Route():
         self.control_stops_df['dfIndex'] = closest_rows_df['index'].values
         self.control_stops_df['csvIndex'] = closest_rows_df['index'].values + 2
             
-        if choose_specific_route:
+        if choose_specific:
             # Save the control stops data to a specific file
             root = tk.Tk()
             root.withdraw()
@@ -203,7 +201,8 @@ class Route():
         next_rows = self.control_stops_df[self.control_stops_df['cumDistance'] > row['cumDistance']]
         
         if next_rows.empty:
-            raise ValueError("There's no next control stop. The closest control stop might be the last one on the route.")
+            print("There's no next control stop. The closest control stop might be the last one on the route.")
+            return None, None
         
         next_index = next_rows.index[0]
         next_row = self.control_stops_df.iloc[next_index]
