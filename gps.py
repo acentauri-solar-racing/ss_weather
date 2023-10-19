@@ -6,15 +6,17 @@ import constants
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
+from route import Route
 
 class GPS():
     """ Explanation """
     CURRENT_DAY =  time.strftime('%Y%m%d')
     SAVE_NAME = 'GPS'
     
-    def __init__(self, com_port:str, baud:int=4800, choose_specific:bool=True) -> None:
+    def __init__(self, com_port:str, route:Route=None, baud:int=4800, choose_specific:bool=True) -> None:
         self.new_data_day_df = pd.DataFrame()
         self.ser = serial.Serial(com_port, baudrate=baud, timeout=5)
+        self.route = route
 
         if choose_specific:
             self.last_save_directory = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +46,7 @@ class GPS():
 
             else:
                 # Create the empty csv file
-                self.all_day_df = pd.DataFrame(columns=['time', 'latitude', 'longitude'])
+                self.all_day_df = pd.DataFrame(columns=['time', 'latitude', 'longitude', 'cumDistance'])
                 self.all_day_df.to_csv(os.path.join(chosen_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), index=False)
                 print("No csv file found. New created")
 
@@ -110,6 +112,9 @@ class GPS():
             'latitude': latitude_dd,
             'longitude': longitude_dd
         }
+
+        if self.route is not None:
+            current_position['cumDistance'] = self.route.find_closest_row(current_position)[0]['cumDistance']
 
         current_location_df = pd.DataFrame({'time': [pd.Timestamp.now(tz=constants.TIMEZONE)], **current_position})
 
