@@ -42,6 +42,20 @@ class Route():
                 print(f"Data read from {chosen_file}.")
             else:
                 print("No directory chosen. Data not read.")
+
+            # Upload camping
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            root.lift()  # Bring the window to the front
+            root.attributes('-topmost', True)  # Keep the window on top of all others
+
+            chosen_file = filedialog.askopenfilename(title='Select the csv file with camping data', filetypes=[("CSV files", "*.csv")])
+
+            if chosen_file:
+                self.camping_df = pd.read_csv(chosen_file)
+                print(f"Data read from {chosen_file}.")
+            else:
+                print("No directory chosen. Data not read.")
         
         else:
             # Upload route data
@@ -54,6 +68,10 @@ class Route():
             csv_file_path = os.path.join(script_directory, constants.CONTROL_STOPS)
             self.control_stops_df = pd.read_csv(csv_file_path)
 
+            # Upload camping data
+            script_directory = os.path.dirname(os.path.abspath(__file__))
+            csv_file_path = os.path.join(script_directory, constants.CAMPING)
+            self.camping_df = pd.read_csv(csv_file_path)
 
         # Create k-d tree for searching
         self.kdtree_route = KDTree(self.route_df[['latitude', 'longitude']].values)
@@ -212,3 +230,32 @@ class Route():
             print('Nearest index in dataframe:', next_index)
 
         return next_row, next_index
+    
+    def insert_to_camping(self, choose_specific:bool=False) -> None:
+        """ Insert the cumDistance column to the control stops data. """
+
+        closest_rows_df = self.find_closest_rows(self.camping_df[['latitude', 'longitude']])
+
+        self.camping_df['cumDistance'] = closest_rows_df['closest_row'].apply(lambda x: x['cumDistance']).values
+        self.camping_df['dfIndex'] = closest_rows_df['index'].values
+        self.camping_df['csvIndex'] = closest_rows_df['index'].values + 2
+            
+        if choose_specific:
+            # Save the camping data to a specific file
+            root = tk.Tk()
+            root.withdraw()
+            root.lift()
+            root.attributes('-topmost', True)
+
+            chosen_file = filedialog.asksaveasfilename(title='Save the camping data to a csv file', filetypes=[("CSV files", "*.csv")])
+
+            if chosen_file:
+                self.camping_df.to_csv(chosen_file, index=False)
+                print(f"Camping data saved to {chosen_file}.")
+
+        else:
+            script_directory = os.path.dirname(os.path.abspath(__file__))
+            csv_file_path = os.path.join(script_directory, constants.CAMPING)
+            self.camping_df.to_csv(csv_file_path, index=False)
+        
+            print(f"Camping data saved to {csv_file_path}.")
