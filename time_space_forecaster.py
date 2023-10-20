@@ -85,6 +85,10 @@ class TimeSpaceForecaster():
         now = pd.Timestamp.now()
         driving_time = pd.Timedelta(hours=time['hour'], minutes=time['minute']) - pd.Timedelta(hours=now.hour, minutes=now.minute)
 
+        # Check if the driving time is positive
+        if driving_time.total_seconds() < 0:
+            raise ValueError(f"Driving time is negative: {driving_time.total_seconds()}")
+
         if "max_speed" in type:
             # Set working dataframe
             self.working_df = self.route_data.copy()
@@ -104,7 +108,7 @@ class TimeSpaceForecaster():
             # Set working dataframe
             self._cum_time_at_input_velocity(mean_velocity)
 
-        elif "opt_speed" in type:
+        elif "optimal_speed" in type:
             # Call the opt reader
             opt_velocity = self.opt_reader.get_mean_velocity #TODO IMPROVE OPTIMIZED VELOCITY
 
@@ -118,3 +122,5 @@ class TimeSpaceForecaster():
         position_series = self._recursive_position_finder(driving_time.total_seconds(), cs_to_skip=0)
 
         return position_series['cumDistance']
+    
+    def get_time_at_next_control_stop(self, current_position:dict, type:str) -

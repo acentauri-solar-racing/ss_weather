@@ -1,5 +1,6 @@
 ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
 CONTROL_STOPS = '..\\ss_offline_data\\route\\BWSC\\control_stops.csv'
+CAMPING = '..\\ss_offline_data\\route\\BWSC\\mygeodata\\preprocessed\\Camping.csv'
 TIMEZONE = 'Australia/Darwin'
 GEO = {
     'latitude':     {'min': -90.0, 'max': 90.0},
