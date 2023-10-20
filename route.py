@@ -174,6 +174,7 @@ class Route():
         closest_rows_df = self.find_closest_rows(self.control_stops_df[['latitude', 'longitude']])
 
         self.control_stops_df['cumDistance'] = closest_rows_df['closest_row'].apply(lambda x: x['cumDistance']).values
+        self.control_stops_df['cumTimeAtMaxSpeedLim'] = closest_rows_df['closest_row'].apply(lambda x: x['cumTimeAtMaxSpeedLim']).values
         self.control_stops_df['dfIndex'] = closest_rows_df['index'].values
         self.control_stops_df['csvIndex'] = closest_rows_df['index'].values + 2
             

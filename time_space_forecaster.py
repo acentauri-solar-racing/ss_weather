@@ -122,3 +122,5 @@ class TimeSpaceForecaster():
         position_series = self._recursive_position_finder(driving_time.total_seconds(), cs_to_skip=0)
 
         return position_series['cumDistance']
+    
+    def get_time_at_next_control_stop(self, current_position:dict, type:str) -
