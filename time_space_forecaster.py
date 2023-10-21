@@ -123,4 +123,5 @@ class TimeSpaceForecaster():
 
         return position_series['cumDistance']
     
-    def get_time_at_next_control_stop(self, current_position:dict, type:str) -
+    def get_time_at_next_control_stop(self, current_position:dict, type:str):
+        pass
