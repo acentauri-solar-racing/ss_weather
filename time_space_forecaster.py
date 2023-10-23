@@ -1,3 +1,4 @@
+import functions
 import pandas as pd
 from route import Route
 from gps import GPS
@@ -76,14 +77,14 @@ class TimeSpaceForecaster():
             print("--- Recursive call ---")
             return self._recursive_position_finder(driving_time - 30.0*60.0, cs_to_skip + 1)
     
-    def get_cum_distance_forecast(self, current_position:dict, type:str, time:dict={'hour': 17, 'minute': 0}) -> float:
+    def get_cum_distance_forecast(self, current_position:dict, type:str, time:dict={'hour': 17, 'minute': 0}, speed:float=60) -> float:
         """ """
         # Save current cumulative distance
         self.current_cumDistance = current_position['cumDistance']
 
         # Subtract start time to now
-        now = pd.Timestamp.now()
-        driving_time = pd.Timedelta(hours=time['hour'], minutes=time['minute']) - pd.Timedelta(hours=now.hour, minutes=now.minute)
+        now_race = functions.get_race_time()
+        driving_time = pd.Timedelta(hours=time['hour'], minutes=time['minute']) - pd.Timedelta(hours=now_race.hour, minutes=now_race.minute)
 
         # Check if the driving time is positive
         if driving_time.total_seconds() < 0:
@@ -116,12 +117,61 @@ class TimeSpaceForecaster():
             self._cum_time_at_input_velocity(opt_velocity)
 
         else:
-            raise ValueError(f"type must be 'max_speed', 'mean_speed_cruise', 'mean_speed' or 'opt_speed'. Received: {type}")
+            if speed is not None:
+                self._cum_time_at_input_velocity(speed)
+            else:
+                raise ValueError(f"type must be 'max_speed', 'mean_speed_cruise', 'mean_speed' or 'opt_speed'. Received: {type} \n speed has to be given if type is not given")
         
         # Call the recursive finder
         position_series = self._recursive_position_finder(driving_time.total_seconds(), cs_to_skip=0)
 
         return position_series['cumDistance']
     
-    def get_time_at_next_control_stop(self, current_position:dict, type:str):
-        pass
+    def get_time_at_next_control_stop(self, current_position:dict, type:str, speed:float=60) -> pd.Timestamp:
+        """ """
+        next_cs, _ = self.route.find_next_cs(current_position)
+        row, _ = self.route.find_closest_row(current_position)
+
+        current_cumDistance = row['cumDistance']
+
+        delta_m = next_cs['cumDistance'] - current_cumDistance
+
+        now_race = functions.get_race_time()
+
+        if "max_speed" in type:
+            current_time = row['cumTimeAtMaxSpeedLim']
+            cs_time = next_cs['cumTimeAtMaxSpeedLim']
+
+            delta_sec = cs_time - current_time
+
+            return now_race + pd.Timedelta(seconds=delta_sec)
+
+        elif "mean_speed_cruise" in type:
+            # Call the db querier
+            mean_velocity = self.db_querier.get_day_mean_velocity60
+            delta_h = (delta_m / 1000) / mean_velocity
+
+            return now_race + pd.Timedelta(hours=delta_h)
+
+        elif "mean_speed" in type:
+            # Call the db querier
+            mean_velocity = self.db_querier.get_day_mean_velocity
+            delta_h = (delta_m / 1000) / mean_velocity
+
+            return now_race + pd.Timedelta(hours=delta_h)
+
+        elif "optimal_speed" in type:
+            # Call the opt reader
+            opt_velocity = self.opt_reader.get_mean_velocity #TODO IMPROVE OPTIMIZED VELOCITY
+            delta_h = (delta_m / 1000) / opt_velocity
+
+            return now_race + pd.Timedelta(hours=delta_h)
+
+        else:
+            if speed is not None:
+                delta_h = (delta_m / 1000) / speed
+
+                return now_race + pd.Timedelta(hours=delta_h)
+            else:
+                raise ValueError(f"type must be 'max_speed', 'mean_speed_cruise', 'mean_speed' or 'opt_speed'. Received: {type} \n speed has to be given if type is not given")
+        
