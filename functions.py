@@ -19,11 +19,10 @@ def rad2deg(rad:float) -> float:
 
 def get_race_time() -> pd.Timestamp:
     """ """
-    now = now = pd.Timestamp.now(tz=constants.TIMEZONE)
+    now = pd.Timestamp.now(tz=constants.TIMEZONE)
     current_hour = now.hour
-    current_minute = now.minute
     
-    if current_hour <= 17 and current_hour > 8:
+    if current_hour <= 17 and current_hour >= 8:
         # During the race
         return now
 
