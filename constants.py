@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi August 2023
+
 ROUTE = '..\\ss_offline_data\\route\\BWSC\\route_preprocessed.csv'
 CONTROL_STOPS = '..\\ss_offline_data\\route\\BWSC\\control_stops.csv'
 CAMPING = '..\\ss_offline_data\\route\\BWSC\\mygeodata\\preprocessed\\Camping.csv'

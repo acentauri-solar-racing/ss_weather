@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi August 2023
+
 import os
 import time
 import psychrolib # Psychrometric conversion library https://github.com/psychrometrics/psychrolib (Installation: https://pypi.org/project/PsychroLib/, Documentation: https://psychrometrics.github.io/psychrolib/api_docs.html)

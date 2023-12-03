@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi September 2023
+
 import geocoder
 import numpy as np
 import pandas as pd
@@ -5,7 +7,6 @@ import constants
 
 def get_current_location() -> dict:
     """ Get current location using geocoder. """
-
     g = geocoder.ip('me')  # 'me' corresponds to your current IP address
     if g.latlng:
         latitude, longitude = g.latlng
@@ -18,7 +19,10 @@ def rad2deg(rad:float) -> float:
     return rad * 180 / np.pi
 
 def get_race_time() -> pd.Timestamp:
-    """ """
+    """ Returns only time during the race:
+        - from 8:00 to 17:00, returns the current time
+        - from 17:00 to 0:00, returns the next day at 8:00
+        - from 0:00 to 8:00, returns the same day at 8:00."""
     now = pd.Timestamp.now(tz=constants.TIMEZONE)
     current_hour = now.hour
     

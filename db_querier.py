@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi October 2023
+
 import os
 import sys
 import glob
@@ -64,7 +66,7 @@ class DbQuerier():
             self._check_and_handle_csv(dir, self.SAVE_NAME_VELOCITY, self.CSV_VELOCITY, 'all_day_v_df', 'save_directory_velocity')
 
     def _check_and_handle_csv(self, chosen_directory, save_name, csv_name, attribute_name, directory_name):
-        """ """
+        """ Function to check if the folder contains the specific CSV type (SoC or Velocity) and handle it. """
         # Check if the folder contains the specific CSV type (SoC or Velocity)
         pattern = os.path.join(chosen_directory, f"*{save_name}*")
         folder = [name for name in glob.glob(pattern) if os.path.isdir(name)]
@@ -92,26 +94,26 @@ class DbQuerier():
 
     @property
     def get_day_mean_velocity(self) -> float:
-        """ """
+        """ Returns the mean velocity of the day."""
         return self.all_day_v_df['velocity'].mean()
     
     @property
     def get_day_mean_velocity60(self) -> float:
-        """ """
+        """ Returns the mean velocity of the day larger than 60 km/h."""
         return self.all_day_v_df[self.all_day_v_df['velocity'] > self.MIN_VEL]['velocity'].mean()
     
     @property
     def get_last_velocity(self) -> float:
-        """ """
+        """ Returns the last velocity."""
         return self.all_day_v_df['velocity'].tail(1)
     
     @property
     def get_last_soc(self) -> float:
-        """ """
+        """ Returns the last SoC."""
         return self.all_day_soc_df['SoC'].tail(1)
     
     def query_velocity(self) -> pd.DataFrame:
-        """ """
+        """ Query the velocity from the DB using query_latest and return the dataframe."""
         # Query IcuHeartbeat data
         icu_data = self.db_service.query_latest(orm_model=self.can_db_models.IcuHeartbeat, num_entries=self.NUM_ENTRIES)
         icu_time_series = icu_data['timestamp']
@@ -139,7 +141,7 @@ class DbQuerier():
         return velocity_df
     
     def query_soc(self) -> pd.DataFrame:
-        """ """
+        """ Query the SoC from the DB using query_latest and return the dataframe."""
         # Query BmsPackSoc data
         bms_data = self.db_service.query_latest(orm_model=self.can_db_models.BmsPackSoc, num_entries=self.NUM_ENTRIES)
         bms_time_series = bms_data['timestamp']
@@ -164,7 +166,7 @@ class DbQuerier():
         return soc_df
     
     def save_data2folder(self) -> None:
-        """ """
+        """ Save the SoC and Velocity data to the folder."""
         self.new_data_day_soc_df.to_csv(os.path.join(self.save_directory_soc, self.CSV_SOC), mode='a', header=False, index=False)
         print(f'Data saved to {os.path.join(self.save_directory_soc, self.CSV_SOC)}')
 

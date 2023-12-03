@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi August 2023
+
 import pandas as pd
 import numpy as np
 import constants

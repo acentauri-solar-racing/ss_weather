@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi and Severin Meyer October 2023
+
 import os
 import time
 import glob
@@ -9,7 +11,7 @@ from tkinter import filedialog
 from route import Route
 
 class GPS():
-    """ Explanation """
+    """ Class to get the current location and save the data to a folder of the GPS. """
     CURRENT_DAY =  time.strftime('%Y%m%d')
     SAVE_NAME = 'GPS'
     
@@ -52,16 +54,16 @@ class GPS():
 
     @property
     def get_last_position(self) -> pd.DataFrame:
-        """ """
+        """ Return the last position. """
         return self.all_day_df.tail(1)
     
     @property
     def get_all_positions(self) -> pd.DataFrame:
-        """ """
+        """ Return all the positions of the day. """
         return self.all_day_df
     
     def get_current_location(self) -> dict:
-        """ """
+        """ Return the current location as a dictionary. """
         i = 0
         found = False
         while not found and i < 30:
@@ -113,6 +115,7 @@ class GPS():
             'longitude': longitude_dd
         }
 
+        # Add the cumulative distance if a route is given
         if self.route is not None:
             current_position['cumDistance'] = self.route.find_closest_row(current_position)[0]['cumDistance']
 
@@ -125,6 +128,6 @@ class GPS():
         return current_position
     
     def save_data2folder(self) -> None:
-        """ """
+        """ Save the new data to the folder and reset the new_data_df attribute. """
         self.new_data_day_df.to_csv(os.path.join(self.last_save_directory, f"{self.CURRENT_DAY}_{self.SAVE_NAME}.csv"), mode='a', header=False, index=False)
         self.new_data_day_df = pd.DataFrame() # Reset the new_data_df attribute

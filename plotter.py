@@ -1,9 +1,12 @@
+# Created by Giacomo Mastroddi October 2023
+
 import folium
 import pandas as pd
 from route import Route
 
 class Plotter():
-    """ """
+    """ Class to plot the route and the current position in a folium map."""
+
     def __init__(self, route:Route) -> None:
         self.route = route
         self.route_data = self.route.get_route_data
@@ -41,11 +44,11 @@ class Plotter():
 
     @property
     def plot(self) -> None:
-        """ """
+        """ Plot the map."""
         return self.map
     
     def add_api_sites(self, api_sites:pd.DataFrame) -> None:
-        """ """
+        """ Add the API sites of forecasts to the map."""
         for _, row in api_sites.iterrows():
             folium.CircleMarker(
                 location=[row['latitude'], row['longitude']],
@@ -58,7 +61,7 @@ class Plotter():
             ).add_to(self.map)
     
     def add_control_stops(self, control_stops_df:pd.DataFrame) -> None:
-        """ """
+        """ Add the control stops to the map."""
         # Save control stops dataframe without first and last row
         self.control_stops = control_stops_df.iloc[1:-1]
         self.start_position = control_stops_df.iloc[0]
@@ -76,7 +79,7 @@ class Plotter():
             ).add_to(self.map)
 
     def add_current_position(self, current_position:dict) -> None:
-        """ """
+        """ Add the current position to the map."""
         folium.Marker(
                 location=[current_position['latitude'], current_position['longitude']],
                 icon=folium.Icon(icon="car", prefix="fa"),  # Using Font Awesome's car icon
@@ -93,7 +96,7 @@ class Plotter():
     # ).add_to(map_obj)
 
     def _recursive_position_finder(self, current_cumDistance:float, driving_time:float, cs_to_skip:int) -> pd.Series:
-        """ """
+        """ Recursively find the position at the end of the driving time considering the control stops."""
         # Cut data at current position (lower cut)
         cut_data = self.route_data.copy()
 
@@ -137,7 +140,7 @@ class Plotter():
             return self._recursive_position_finder(current_cumDistance, driving_time - 30.0*60.0, cs_to_skip + 1)
         
     def update_max_speed_distance(self, current_position:dict) -> float:
-        """ """
+        """ Add the position that will be reached at the end of the day considering driving at max speed."""
         # Subtract overnight stop start time to now
         now = pd.Timestamp.now()
         driving_time = pd.Timedelta(hours=17) - pd.Timedelta(hours=now.hour, minutes=now.minute)

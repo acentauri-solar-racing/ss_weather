@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi August 2023
+
 import requests
 import constants
 import pandas as pd

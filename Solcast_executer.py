@@ -1,3 +1,4 @@
+# Created by Giacomo Mastroddi October 2023
 # https://github.com/Solcast/solcast-api-python-sdk
 
 import constants
@@ -46,7 +47,13 @@ class SolcastExecuter():
                         raise ValueError(f'{variable} has to be between {min_value} and {max_value}. Received: {value}')
         
     def get_forecast(self, position:dict, checked:bool=False, hours:int=48, print_is_requested:bool=False) -> Tuple[pd.DataFrame, bool]:
-        """ """
+        """ Call the Solcast API to get the solar forecast for a specific position.
+        
+            Inputs:
+                position (dict): The position of the forecast.
+                checked (bool): If the variables have been checked (default: False).
+                hours (int): The number of hours in advance to get the forecast (default: 48).
+                print_is_requested (bool): If the print is requested (default: False)."""
         if not checked:
             self._check_variables(position)
 
@@ -81,7 +88,13 @@ class SolcastExecuter():
         return response_df, True
     
     def get_forecasts(self, route_api_df:pd.DataFrame, checked:bool=False, hours_in_advance:int=48, print_is_requested:bool=False) -> pd.DataFrame:
-        """ """
+        """ Call the Solcast API to get the solar forecasts for a specific route.
+        
+            Inputs:
+                route_api_df (pd.DataFrame): The dataframe with the route information.
+                checked (bool): If the variables have been checked (default: False).
+                hours_in_advance (int): The number of hours in advance to get the forecasts (default: 48).
+                print_is_requested (bool): If the print is requested (default: False)."""
         # Check that the dataframe has the right columns
         if 'latitude' not in route_api_df.columns or 'longitude' not in route_api_df.columns or 'cumDistance' not in route_api_df.columns:
             raise ValueError('The dataframe has to have latitude, longitude, and cumDistance columns.')

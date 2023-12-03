@@ -1,3 +1,5 @@
+// Created by Giacomo Mastroddi October 2023
+
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
 

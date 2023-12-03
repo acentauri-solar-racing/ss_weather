@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi October 2023
+
 import functions
 import pandas as pd
 from route import Route
@@ -7,7 +9,7 @@ from optimal_reader import OptimalReader
 
 
 class TimeSpaceForecaster():
-    """ """
+    """ Class to forecast the time and space of the car on the route of the race."""
     
     def __init__(self, route:Route, gps:GPS, db_querier:DbQuerier, optimal_reader:OptimalReader) -> None:
         self.route = route
@@ -24,7 +26,10 @@ class TimeSpaceForecaster():
         self.working_col_name = ''
     
     def _cum_time_at_input_velocity(self, velocity:float) -> None:
-        """ vel in km/h """
+        """ Update the working dataframe with the cumulative time at the input velocity.
+        
+            Inputs:
+                velocity (float): The velocity in km/h."""
         time_at_input_v = self.route_data['distance'] / velocity * 3.6
 
         self.working_col_name = 'cumTimeAtInputVelocity'
@@ -32,7 +37,12 @@ class TimeSpaceForecaster():
         self.working_df[self.working_col_name] = time_at_input_v.cumsum()
     
     def _recursive_position_finder(self, driving_time:float, cs_to_skip:int, print_is_requested:bool=False) -> pd.Series:
-        """ """
+        """ Recursively find the position at the end of the driving time considering the control stops.
+        
+            Inputs:
+                driving_time (float): The driving time in seconds.
+                cs_to_skip (int): The number of control stops to skip.
+                print_is_requested (bool): If the print is requested (default: False)."""
         # Cut data at current position (lower cut)
         cut_data = self.working_df.copy()
 
@@ -77,14 +87,20 @@ class TimeSpaceForecaster():
             print("--- Recursive call ---")
             return self._recursive_position_finder(driving_time - 30.0*60.0, cs_to_skip + 1)
     
-    def get_cum_distance_forecast(self, current_position:dict, type:str, time:dict={'hour': 17, 'minute': 0}, speed:float=60) -> float:
-        """ """
+    def get_cum_distance_forecast(self, current_position:dict, type:str, end_time:dict={'hour': 17, 'minute': 0}, speed:float=60) -> float:
+        """ Returns the position that will be reached at the end of end_time considering driving at the speed.
+        
+            Inputs:
+                current_position (dict): The current position of the car.
+                type (str): The type of speed to consider. Can be 'max_speed', 'mean_speed_cruise', 'mean_speed' or 'opt_speed'.
+                end_time (dict): The time at which the car will stop driving (default: {'hour': 17, 'minute': 0}).
+                speed (float): The speed in km/h (default: 60)."""
         # Save current cumulative distance
         self.current_cumDistance = current_position['cumDistance']
 
         # Subtract start time to now
         now_race = functions.get_race_time()
-        driving_time = pd.Timedelta(hours=time['hour'], minutes=time['minute']) - pd.Timedelta(hours=now_race.hour, minutes=now_race.minute)
+        driving_time = pd.Timedelta(hours=end_time['hour'], minutes=end_time['minute']) - pd.Timedelta(hours=now_race.hour, minutes=now_race.minute)
 
         # Check if the driving time is positive
         if driving_time.total_seconds() < 0:
@@ -128,7 +144,12 @@ class TimeSpaceForecaster():
         return position_series['cumDistance']
     
     def get_time_at_next_control_stop(self, current_position:dict, type:str, speed:float=60) -> pd.Timestamp:
-        """ """
+        """ Returns the time at which the car will reach the next control stop considering driving at the speed.
+        
+            Inputs:
+                current_position (dict): The current position of the car.
+                type (str): The type of speed to consider. Can be 'max_speed', 'mean_speed_cruise', 'mean_speed' or 'opt_speed'.
+                speed (float): The speed in km/h (default: 60)."""
         next_cs, _ = self.route.find_next_cs(current_position)
         row, _ = self.route.find_closest_row(current_position)
 

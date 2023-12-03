@@ -1,3 +1,5 @@
+# Created by Giacomo Mastroddi October 2023
+
 import pandas as pd
 import os
 import glob
@@ -6,7 +8,7 @@ from tkinter import filedialog
 from dateutil.tz import tzlocal
 
 class OptimalReader():
-    """ """
+    """ Class to read and convert the data from the dynamic programming algorithm."""
     
     def __init__(self, choose_specific:bool=True) -> None:
         _ = self.update_optimal_data(choose_specific=choose_specific)
@@ -27,7 +29,7 @@ class OptimalReader():
         return self.optimal_df['velocity'].mean()
     
     def update_optimal_data(self, choose_specific:bool=True) -> pd.DataFrame:
-        """ """
+        """ Read the optimal data from the csv file of the dynamic programming algorithm."""
         # Upload optimal data
         if choose_specific:
             root = tk.Tk()
